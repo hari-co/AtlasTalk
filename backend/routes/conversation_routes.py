@@ -78,3 +78,54 @@ async def get_conversation(conversation_id: str, request: Request):
 		"created_at": doc.get("created_at"),
 		"metadata": doc.get("metadata", {}),
 	}
+
+
+@router.post("/{conversation_id}/end", status_code=200)
+async def end_conversation_in_character(conversation_id: str, request: Request):
+	"""Ask the agent to end the conversation in-character with a short farewell.
+
+	Returns the assistant's closing message.
+	"""
+	coll = conv_collection(request)
+	oid = ObjectId(conversation_id)
+
+	doc = await coll.find_one({"_id": oid})
+	if not doc:
+		raise HTTPException(status_code=404, detail="Conversation not found")
+
+	agent_name = doc.get("agent")
+	if not agent_name:
+		raise HTTPException(status_code=400, detail="Conversation is not agent-backed")
+
+	# Build an in-character closing instruction using conversation metadata
+	metadata = doc.get("metadata", {}) or {}
+	language = metadata.get("language")
+	scenario_prompt = metadata.get("scenario_prompt")
+
+	parts = [
+		"Please end this conversation now in character."
+	]
+	if scenario_prompt:
+		parts.append(f"Stay consistent with this scenario: {scenario_prompt}")
+	# Keep it brief and avoid new topics
+	parts.append("Provide a brief, warm farewell (1-3 sentences). Do not introduce new topics.")
+	if language and isinstance(language, str):
+		parts.append(f"Respond in {language}.")
+
+	closing_instruction = " ".join(parts)
+
+	client = _get_client_for_agent(agent_name)
+	try:
+		result = await messageAgent(
+			client,
+			conversation_id,
+			"user",
+			closing_instruction,
+			db=request.app.state._mongo_db,
+		)
+	except Exception as exc:
+		import logging
+		logging.exception("Error ending conversation %s", conversation_id)
+		raise HTTPException(status_code=502, detail=str(exc))
+
+	return {"conversation_id": conversation_id, "assistant": result.get("assistant_text")}
