@@ -3,6 +3,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
 from routes.voice_roleplay import router as voice_roleplay_router
+from backend.services.db import init_db, close_db
+from backend.services.conversation import router as conv_router
+from backend.routes.agents import router as agents_router
+
 
 app = FastAPI(title="AtlasTalk API", description="Voice Roleplay and Conversation API")
 
@@ -16,6 +20,16 @@ app.add_middleware(
 )
 
 app.include_router(voice_roleplay_router)
+app.include_router(conv_router)
+app.include_router(agents_router)
+
+@app.on_event("startup")
+async def startup_event():
+    init_db(app)
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    close_db(app)
 
 @app.get("/")
 async def root():
