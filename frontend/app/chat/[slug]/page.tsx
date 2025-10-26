@@ -97,7 +97,48 @@ function ChatPageClient({ slug }: { slug: string }) {
         const data: { conversation_id: string; agent: string; gemini_conversation_id?: string | null } = await res.json()
         if (cancelled) return
         setDoConversationID(data.conversation_id)
-        if (data.gemini_conversation_id) setGeminiConversationID(data.gemini_conversation_id)
+        if (data.gemini_conversation_id) {
+          setGeminiConversationID(data.gemini_conversation_id)
+          // Immediately ask Gemini to generate goals
+          try {
+            const goalsRes = await fetch(`http://localhost:8000/conversations/${data.gemini_conversation_id}/messages`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ role: 'user', content: 'gen goals' }),
+            })
+            if (!goalsRes.ok) {
+              console.warn('Gemini goals prime failed', goalsRes.status, await goalsRes.text())
+            }
+            else {
+              // Backend returns { conversation_id, assistant: string }
+              const payload = await goalsRes.json()
+              const assistant = payload?.assistant
+              if (assistant && typeof assistant === 'string') {
+                // Parse JSON from assistant text (expected to be pure JSON by system prompt)
+                const tryParse = (text: string) => {
+                  try { return JSON.parse(text) } catch { return null }
+                }
+                let parsed = tryParse(assistant)
+                if (!parsed) {
+                  // Strip code fences or extra formatting, then retry
+                  const cleaned = assistant.replace(/```json\n?|```/g, '').trim()
+                  parsed = tryParse(cleaned)
+                }
+                if (parsed && Array.isArray(parsed.goals)) {
+                  setGoals(parsed.goals.map((g: any, idx: number) => ({
+                    id: idx + 1,
+                    text: typeof g?.goal === 'string' ? g.goal : `Goal ${idx + 1}`,
+                    completed: !!g?.completed,
+                  })))
+                } else {
+                  console.warn('Unexpected goals format from Gemini:', assistant)
+                }
+              }
+            }
+          } catch (e) {
+            console.warn('Gemini goals prime error', e)
+          }
+        }
         // Debug log
         console.info('Agent setup complete:', { ...data, agentRequested: agentToUse, scenarioProvided: !!selectedScenario, countryUsed: countryToUse, languageUsed: languageToUse })
       } catch (err) {
@@ -268,24 +309,111 @@ function ChatPageClient({ slug }: { slug: string }) {
             }
             setMessages((prev) => [...prev, userMessage])
             
-            // Simulate AI response
-            setTimeout(() => {
-              const responses = [
-                `That's a great question! In ${countryData.name}, we have a unique perspective on that. Let me share my experience...`,
-                `I'm glad you asked! Here in ${countryData.name}, things work a bit differently. From my daily life, I can tell you...`,
-                `Interesting! In our culture, we approach this in a special way. Let me explain how we do things here...`,
-              ]
-              
-              const assistantMessage: Message = {
-                id: (Date.now() + 1).toString(),
-                role: "assistant",
-                content: responses[Math.floor(Math.random() * responses.length)],
-                timestamp: new Date(),
+            // Send the user's message to Gemini to update goals status
+            try {
+              if (geminiConversationID) {
+                const gemRes = await fetch(`http://localhost:8000/conversations/${geminiConversationID}/messages`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ role: 'user', content: transcription }),
+                })
+                if (gemRes.ok) {
+                  const gemPayload = await gemRes.json()
+                  const assistant = gemPayload?.assistant
+                  if (assistant && typeof assistant === 'string') {
+                    const tryParse = (text: string) => { try { return JSON.parse(text) } catch { return null } }
+                    let parsed = tryParse(assistant)
+                    if (!parsed) {
+                      const cleaned = assistant.replace(/```json\n?|```/g, '').trim()
+                      parsed = tryParse(cleaned)
+                    }
+                    if (parsed && Array.isArray(parsed.goals)) {
+                      setGoals(parsed.goals.map((g: any, idx: number) => ({
+                        id: idx + 1,
+                        text: typeof g?.goal === 'string' ? g.goal : `Goal ${idx + 1}`,
+                        completed: !!g?.completed,
+                      })))
+                    }
+                  }
+                } else {
+                  console.warn('Gemini message failed', gemRes.status, await gemRes.text())
+                }
               }
-              
-              setMessages((prev) => [...prev, assistantMessage])
+            } catch (e) {
+              console.warn('Gemini message error', e)
+            }
+            
+            // Decide whether to end conversation or continue based on goals
+            try {
+              // Prefer checking current goals state; Gemini parser above also refreshed it
+              const allDone = goals.length > 0 && goals.every(g => g.completed)
+
+              if (!doConversationID) {
+                console.warn('Missing DO conversation id; skipping agent reply')
+                setIsTyping(false)
+                return
+              }
+
+              let assistantText: string | null = null
+              if (allDone) {
+                // End conversation in-character
+                const endRes = await fetch(`http://localhost:8000/conversations/${doConversationID}/end`, {
+                  method: 'POST',
+                })
+                if (endRes.ok) {
+                  const endPayload = await endRes.json()
+                  assistantText = typeof endPayload?.assistant === 'string' ? endPayload.assistant : null
+                } else {
+                  console.warn('End conversation failed', endRes.status, await endRes.text())
+                }
+              } else {
+                // Continue conversation with user message
+                const msgRes = await fetch(`http://localhost:8000/conversations/${doConversationID}/messages`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ role: 'user', content: transcription }),
+                })
+                if (msgRes.ok) {
+                  const msgPayload = await msgRes.json()
+                  assistantText = typeof msgPayload?.assistant === 'string' ? msgPayload.assistant : null
+                } else {
+                  console.warn('DO agent message failed', msgRes.status, await msgRes.text())
+                }
+              }
+
+              if (assistantText) {
+                // Append assistant message
+                const assistantMessage: Message = {
+                  id: (Date.now() + 1).toString(),
+                  role: 'assistant',
+                  content: assistantText,
+                  timestamp: new Date(),
+                }
+                setMessages((prev) => [...prev, assistantMessage])
+
+                // Request TTS and play audio
+                try {
+                  const ttsForm = new FormData()
+                  ttsForm.append('text', assistantText)
+                  const ttsRes = await fetch('http://localhost:8000/audio/tts', { method: 'POST', body: ttsForm })
+                  if (ttsRes.ok) {
+                    const audioBlobResp = await ttsRes.blob()
+                    const audioUrl = URL.createObjectURL(audioBlobResp)
+                    const audio = new Audio(audioUrl)
+                    audio.play()
+                    audio.onended = () => URL.revokeObjectURL(audioUrl)
+                  } else {
+                    console.warn('TTS request failed', ttsRes.status)
+                  }
+                } catch (e) {
+                  console.warn('TTS error', e)
+                }
+              }
               setIsTyping(false)
-            }, 1500)
+            } catch (e) {
+              console.warn('Post-STT agent flow error', e)
+              setIsTyping(false)
+            }
             
           } catch (error) {
             console.error('Error transcribing audio:', error)
