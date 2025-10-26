@@ -404,11 +404,16 @@ function ChatPageClient({ slug }: { slug: string }) {
             })
             
             if (!response.ok) {
-              throw new Error(`HTTP error! status: ${response.status}`)
+              const errorText = await response.text()
+              throw new Error(`STT failed (${response.status}): ${errorText}`)
             }
             
             const data = await response.json()
             const transcription = data.transcription
+            
+            if (!transcription || transcription.trim() === '') {
+              throw new Error('No transcription received from STT service')
+            }
             
             // Add user message with transcription
             const userMessage: Message = {
@@ -419,7 +424,10 @@ function ChatPageClient({ slug }: { slug: string }) {
             }
             setMessages((prev) => [...prev, userMessage])
             
-            // Send the user's message to Gemini to update goals status
+            // Send the user's message to Gemini to update goals status FIRST
+            let updatedGoals = goals // Keep current goals as fallback
+            let allDone = false
+            
             try {
               if (geminiConversationID) {
                 const gemRes = await fetch(`http://localhost:8000/conversations/${geminiConversationID}/messages`, {
@@ -438,11 +446,12 @@ function ChatPageClient({ slug }: { slug: string }) {
                       parsed = tryParse(cleaned)
                     }
                     if (parsed && Array.isArray(parsed.goals)) {
-                      setGoals(parsed.goals.map((g: any, idx: number) => ({
+                      updatedGoals = parsed.goals.map((g: any, idx: number) => ({
                         id: idx + 1,
                         text: typeof g?.goal === 'string' ? g.goal : `Goal ${idx + 1}`,
                         completed: !!g?.completed,
-                      })))
+                      }))
+                      setGoals(updatedGoals)
                     }
                   }
                 } else {
@@ -453,18 +462,18 @@ function ChatPageClient({ slug }: { slug: string }) {
               console.warn('Gemini message error', e)
             }
             
-            // Decide whether to end conversation or continue based on goals
+            // NOW check goals completion with updated state
+            allDone = updatedGoals.length > 0 && updatedGoals.every(g => g.completed)
+
+            if (!doConversationID) {
+              console.warn('Missing DO conversation id; skipping agent reply')
+              setIsTyping(false)
+              return
+            }
+
+            // Decide whether to end conversation or continue based on UPDATED goals
+            let assistantText: string | null = null
             try {
-              // Prefer checking current goals state; Gemini parser above also refreshed it
-              const allDone = goals.length > 0 && goals.every(g => g.completed)
-
-              if (!doConversationID) {
-                console.warn('Missing DO conversation id; skipping agent reply')
-                setIsTyping(false)
-                return
-              }
-
-              let assistantText: string | null = null
               if (allDone) {
                 // End conversation in-character
                 const endRes = await fetch(`http://localhost:8000/conversations/${doConversationID}/end`, {
@@ -490,8 +499,11 @@ function ChatPageClient({ slug }: { slug: string }) {
                   console.warn('DO agent message failed', msgRes.status, await msgRes.text())
                 }
               }
+            } catch (e) {
+              console.warn('Agent conversation error', e)
+            }
 
-              if (assistantText) {
+            if (assistantText) {
                 // Append assistant message
                 const assistantMessage: Message = {
                   id: (Date.now() + 1).toString(),
@@ -530,31 +542,28 @@ function ChatPageClient({ slug }: { slug: string }) {
                       stopAISpeaking()
                     })
                   } else {
-                    console.warn('TTS request failed', ttsRes.status)
+                    const errorText = await ttsRes.text()
+                    console.warn('TTS request failed', ttsRes.status, errorText)
                   }
                 } catch (e) {
-                  console.warn('TTS error', e)
+                  console.error('TTS error', e)
+                  // Continue without audio if TTS fails
                 }
               }
-              setIsTyping(false)
             } catch (e) {
-              console.warn('Post-STT agent flow error', e)
+              console.error('STT or conversation error:', e)
+              // Show user-friendly error message
+              const errorMessage: Message = {
+                id: (Date.now() + 2).toString(),
+                role: "assistant",
+                content: "Sorry, I had trouble processing your message. Please try speaking again.",
+                timestamp: new Date(),
+              }
+              setMessages((prev) => [...prev, errorMessage])
+            } finally {
+              // Always clean up UI state
               setIsTyping(false)
             }
-            
-          } catch (error) {
-            console.error('Error transcribing audio:', error)
-            setIsTyping(false)
-            
-            // Show error message
-            const errorMessage: Message = {
-              id: Date.now().toString(),
-              role: "assistant",
-              content: "Sorry, I couldn't transcribe your audio. Please try again.",
-              timestamp: new Date(),
-            }
-            setMessages((prev) => [...prev, errorMessage])
-          }
         }
         
         mediaRecorder.start()
