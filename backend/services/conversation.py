@@ -10,6 +10,9 @@ from bson import ObjectId
 from openai import OpenAI
 import google.generativeai as genai
 
+import aiohttp
+import tempfile
+
 load_dotenv()
 
 # Map agent names to their DigitalOcean Agent base URLs
@@ -23,6 +26,72 @@ MONGODB_DB = os.getenv("MONGODB_DB", "altastalk")
 
 # Cached Motor client (module-level singleton)
 _motor_client: Optional[AsyncIOMotorClient] = None
+
+# ================================
+# 🔊 Text-to-Speech (TTS)
+# ================================
+async def text_to_speech(text: str, voice: str = "pNInz6obpgDQGcFmaJgB") -> str:
+    """
+    Convert text into speech using ElevenLabs API.
+    Returns the path to a temporary .mp3 file.
+    """
+    api_key = os.getenv("ELEVENLABS_API_KEY")
+    if not api_key:
+        raise RuntimeError("ELEVENLABS_API_KEY not configured in .env")
+
+    url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice}"
+
+    headers = {
+        "Accept": "audio/mpeg",
+        "Content-Type": "application/json",
+        "xi-api-key": api_key,
+    }
+
+    payload = {
+        "text": text,
+        "model_id": "eleven_multilingual_v2",
+        "voice_settings": {"stability": 0.4, "similarity_boost": 0.7},
+    }
+
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, headers=headers, json=payload) as resp:
+            if resp.status != 200:
+                err = await resp.text()
+                raise RuntimeError(f"TTS failed ({resp.status}): {err}")
+
+            # Save audio to a temp file
+            audio_data = await resp.read()
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as f:
+                f.write(audio_data)
+                return f.name
+
+
+# ================================
+# 🎙️ Speech-to-Text (STT)
+# ================================
+async def speech_to_text(audio_path: str) -> str:
+    """
+    Transcribe speech from an audio file to text using ElevenLabs STT API.
+    """
+    api_key = os.getenv("ELEVENLABS_API_KEY")
+    if not api_key:
+        raise RuntimeError("ELEVENLABS_API_KEY not configured in .env")
+
+    url = "https://api.elevenlabs.io/v1/speech-to-text"
+    headers = {"xi-api-key": api_key}
+
+    async with aiohttp.ClientSession() as session:
+        with open(audio_path, "rb") as f:
+            data = aiohttp.FormData()
+            data.add_field("file", f, filename=os.path.basename(audio_path))
+            data.add_field("model_id", "scribe_v1")
+
+            async with session.post(url, headers=headers, data=data) as resp:
+                if resp.status != 200:
+                    err = await resp.text()
+                    raise RuntimeError(f"STT failed ({resp.status}): {err}")
+                result = await resp.json()
+                return result.get("text", "")
 
 
 def _get_motor_client() -> AsyncIOMotorClient:
