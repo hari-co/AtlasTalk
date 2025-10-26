@@ -47,23 +47,31 @@ class VoiceRoleplayService:
             }
         return self.chat_sessions[session_id]
     
-    def _parse_json_response(self, response_text: str) -> dict:
-        """Safely parse JSON from response text."""
+    def _parse_json_response(self, response_text: str):
+        """Safely parse JSON from response text (handles objects and arrays)."""
+        # Remove markdown code fences if present
         response_text = response_text.strip()
         
-        # Try to find JSON in the response
-        json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+        # Remove markdown code fence patterns (```json ... ``` or ``` ... ```)
+        response_text = re.sub(r'^```json\s*', '', response_text, flags=re.MULTILINE)
+        response_text = re.sub(r'^```\s*', '', response_text, flags=re.MULTILINE)
+        response_text = re.sub(r'\s*```\s*$', '', response_text, flags=re.MULTILINE)
+        response_text = response_text.strip()
+        
+        # Try to find JSON (either object {} or array [])
+        json_match = re.search(r'(\[.*?\]|\{.*?\})', response_text, re.DOTALL)
         if json_match:
             json_str = json_match.group(0)
+            try:
+                return json.loads(json_str)
+            except json.JSONDecodeError as e:
+                print(f"JSON parsing error: {e}")
+                print(f"Attempted to parse: {json_str}")
+                print(f"Full response: {response_text}")
         else:
-            json_str = response_text
+            print(f"No JSON found in response: {response_text}")
         
-        try:
-            return json.loads(json_str)
-        except json.JSONDecodeError as e:
-            print(f"JSON parsing error: {e}")
-            print(f"Raw response: {response_text}")
-            return None
+        return None
 
     async def generate_scenario(self, scenario_prompt: str) -> dict:
         """Generate a conversational roleplay scenario using Gemini."""
