@@ -1,7 +1,7 @@
 # backend/services/conversation.py
 from fastapi import APIRouter, HTTPException, Request, status, Depends
 from typing import List
-from backend.models.conversation import Message, ConversationCreate, ConversationInDB
+from models.conversation import Message, ConversationCreate, ConversationInDB
 from datetime import datetime
 from bson import ObjectId
 
