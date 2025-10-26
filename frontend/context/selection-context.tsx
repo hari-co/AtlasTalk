@@ -8,6 +8,11 @@ export type SelectionContextType = {
   setSelectedCountry: (value: string | null) => void
   selectedLanguage: string | null
   setSelectedLanguage: (value: string | null) => void
+  // Store the situation text of the selected scenario
+  selectedScenario: string | null
+  setSelectedScenario: (value: string | null) => void
+  selectedAgent: string | null
+  setSelectedAgent: (value: string | null) => void
   reset: () => void
 }
 
@@ -16,14 +21,20 @@ const SelectionContext = createContext<SelectionContextType | undefined>(undefin
 export function SelectionProvider({ children }: { children: React.ReactNode }) {
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null)
   const [selectedLanguage, setSelectedLanguage] = useState<string | null>(null)
+  const [selectedScenario, setSelectedScenario] = useState<string | null>(null)
+  const [selectedAgent, setSelectedAgent] = useState<string | null>(null)
 
   // Hydrate from localStorage on mount (client only)
   useEffect(() => {
     try {
       const c = typeof window !== "undefined" ? localStorage.getItem("selectedCountry") : null
       const l = typeof window !== "undefined" ? localStorage.getItem("selectedLanguage") : null
+      const s = typeof window !== "undefined" ? localStorage.getItem("selectedScenario") : null
+      const a = typeof window !== "undefined" ? localStorage.getItem("selectedAgent") : null
       if (c) setSelectedCountry(c)
       if (l) setSelectedLanguage(l)
+      if (s) setSelectedScenario(s)
+      if (a) setSelectedAgent(a)
     } catch {
       // ignore storage errors
     }
@@ -50,6 +61,28 @@ export function SelectionProvider({ children }: { children: React.ReactNode }) {
     }
   }, [selectedLanguage])
 
+  // Persist scenario
+  useEffect(() => {
+    try {
+      if (typeof window === "undefined") return
+      if (selectedScenario) localStorage.setItem("selectedScenario", selectedScenario)
+      else localStorage.removeItem("selectedScenario")
+    } catch {
+      // ignore storage errors
+    }
+  }, [selectedScenario])
+
+  // Persist agent
+  useEffect(() => {
+    try {
+      if (typeof window === "undefined") return
+      if (selectedAgent) localStorage.setItem("selectedAgent", selectedAgent)
+      else localStorage.removeItem("selectedAgent")
+    } catch {
+      // ignore storage errors
+    }
+  }, [selectedAgent])
+
   // Debug: log whenever context values change
   useEffect(() => {
     // You can gate this in production if needed
@@ -71,9 +104,18 @@ export function SelectionProvider({ children }: { children: React.ReactNode }) {
     console.log(`[SelectionContext] Selected country: ${countryOut} | Language: ${languageOut}`)
   }, [selectedCountry, selectedLanguage])
 
+  // Debug: log scenario/agent changes
+  useEffect(() => {
+    const scenarioOut = selectedScenario ?? "(none)"
+    const agentOut = selectedAgent ?? "(none)"
+    console.log(`[SelectionContext] Scenario: ${scenarioOut} | Agent: ${agentOut}`)
+  }, [selectedScenario, selectedAgent])
+
   const reset = () => {
     setSelectedCountry(null)
     setSelectedLanguage(null)
+    setSelectedScenario(null)
+    setSelectedAgent(null)
   }
 
   const value: SelectionContextType = {
@@ -81,6 +123,10 @@ export function SelectionProvider({ children }: { children: React.ReactNode }) {
     setSelectedCountry,
     selectedLanguage,
     setSelectedLanguage,
+    selectedScenario,
+    setSelectedScenario,
+    selectedAgent,
+    setSelectedAgent,
     reset,
   }
 

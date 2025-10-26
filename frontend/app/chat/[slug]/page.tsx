@@ -4,6 +4,7 @@ import type React from "react"
 
 import { useState, useRef, useEffect, use } from "react"
 import { useRouter } from "next/navigation"
+import { useSelection } from "@/context/selection-context"
 import { getCountryData } from "@/lib/country-data"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -24,6 +25,7 @@ export default function ChatPage({ params }: { params: Promise<{ slug: string }>
 
 function ChatPageClient({ slug }: { slug: string }) {
   const router = useRouter()
+  const { selectedAgent, selectedScenario, selectedCountry, selectedLanguage } = useSelection()
   const countryData = getCountryData(slug)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
@@ -44,16 +46,69 @@ function ChatPageClient({ slug }: { slug: string }) {
   const analyserRef = useRef<AnalyserNode | null>(null)
   const animationFrameRef = useRef<number | null>(null)
 
-  // const [GconversationID, setGConversationID] = useState<string | null>(null)
-  // const [DOconversationID, setDOConversationID] = useState<string | null>(null)
+  // Conversation IDs from backend agent setup
+  const [geminiConversationID, setGeminiConversationID] = useState<string | null>(null)
+  const [doConversationID, setDoConversationID] = useState<string | null>(null)
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }
 
-  // useEffect(() => {
-    
-  // }, [])
+  // Initialize backend conversations for this country/language
+  useEffect(() => {
+    let cancelled = false
+    const setupAgent = async () => {
+      if (!countryData) return
+      try {
+        const agentToUse = selectedAgent || 'TAXI'
+        // Resolve country and language from context with safe fallbacks
+        const ctxCountryName = selectedCountry ? (getCountryData(selectedCountry)?.name || selectedCountry) : null
+        const countryToUse = ctxCountryName || countryData.name
+        const languageToUse = selectedLanguage || countryData.language
+        let res = await fetch(`http://localhost:8000/agents/${agentToUse}/setup`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            country: countryToUse,
+            language: languageToUse,
+            // Pass situation text as scenario prompt if available
+            scenario_prompt: selectedScenario || undefined,
+            // user_id: optional – add if you have auth context
+          }),
+        })
+        // Fallback: if selected agent isn’t available yet, retry with TAXI
+        if (!res.ok && agentToUse !== 'TAXI' && (res.status === 400 || res.status === 404)) {
+          console.warn(`Agent ${agentToUse} not available, falling back to TAXI`)
+          res = await fetch(`http://localhost:8000/agents/TAXI/setup`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              country: countryToUse,
+              language: languageToUse,
+              scenario_prompt: selectedScenario || undefined,
+              requested_agent: agentToUse,
+            }),
+          })
+        }
+        if (!res.ok) {
+          console.error('Agent setup failed', res.status, await res.text())
+          return
+        }
+        const data: { conversation_id: string; agent: string; gemini_conversation_id?: string | null } = await res.json()
+        if (cancelled) return
+        setDoConversationID(data.conversation_id)
+        if (data.gemini_conversation_id) setGeminiConversationID(data.gemini_conversation_id)
+        // Debug log
+        console.info('Agent setup complete:', { ...data, agentRequested: agentToUse, scenarioProvided: !!selectedScenario, countryUsed: countryToUse, languageUsed: languageToUse })
+      } catch (err) {
+        if (!cancelled) {
+          console.error('Error calling agent setup:', err)
+        }
+      }
+    }
+    setupAgent()
+    return () => { cancelled = true }
+  }, [countryData, selectedAgent, selectedScenario, selectedCountry, selectedLanguage])
   
   useEffect(() => {
     scrollToBottom()
@@ -196,11 +251,6 @@ function ChatPageClient({ slug }: { slug: string }) {
               method: 'POST',
               body: formData
             })
-            
-
-
-
-
             
             if (!response.ok) {
               throw new Error(`HTTP error! status: ${response.status}`)

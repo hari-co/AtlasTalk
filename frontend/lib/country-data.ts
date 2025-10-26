@@ -23,6 +23,7 @@ export interface ScenarioDetail {
   emoji: string
   tagline: string
   localPhrase?: string
+  AGENT: "TAXI" | "GEMINI" | string
 }
 
 export const countryDatabase: Record<string, CountryData> = {
@@ -36,17 +37,19 @@ export const countryDatabase: Record<string, CountryData> = {
     funFact: "The U.S. has no official language at the federal level, though English is the most widely spoken.",
     scenarios: {
       culture: {
-        title: "Fourth of July Barbecue",
+        title: "Fourth of July Taxi Ride",
+        AGENT: "TAXI",
         tagline: "Experience American hospitality and traditions",
-        description: "Join a neighborhood celebration",
+        description: "Experience transit on the busiest day of the year.",
         situation:
-          "You're attending a Fourth of July barbecue in a suburban neighborhood. Neighbors are gathering, sharing food, and discussing local community events. How would you navigate conversations about American traditions and values?",
+          "You're attending a Fourth of July barbecue in a suburban neighborhood. Neighbors are gathering, sharing food, and discussing local community events. How would you navigate an interaction in the taxi on your way there?",
         difficulty: "Beginner",
         emoji: "🎆",
         localPhrase: "Happy Fourth of July!",
       },
       language: {
         title: "Coffee Shop Conversations",
+        AGENT: "BARISTA",
         tagline: "Master casual American English",
         description: "Practice everyday slang and expressions",
         situation:
@@ -57,6 +60,7 @@ export const countryDatabase: Record<string, CountryData> = {
       },
       education: {
         title: "College Campus Tour",
+        AGENT: "COLLEGE_ADVISOR",
         tagline: "Explore the American education system",
         description: "Learn about liberal arts and campus life",
         situation:
@@ -67,6 +71,7 @@ export const countryDatabase: Record<string, CountryData> = {
       },
       economy: {
         title: "Startup Pitch Meeting",
+        AGENT: "INVESTOR",
         tagline: "Navigate American business culture",
         description: "Present your ideas to investors",
         situation:
@@ -77,6 +82,7 @@ export const countryDatabase: Record<string, CountryData> = {
       },
       "daily-life": {
         title: "A Day in American Life",
+        AGENT: "LOCAL_FRIEND",
         tagline: "Experience typical daily routines",
         description: "From coffee runs to evening activities",
         situation:
@@ -98,6 +104,7 @@ export const countryDatabase: Record<string, CountryData> = {
     scenarios: {
       culture: {
         title: "Chinese New Year Celebration",
+        AGENT: "FAMILY_MEMBER",
         tagline: "Immerse in traditional festivities",
         description: "Join a family celebration",
         situation:
@@ -108,6 +115,7 @@ export const countryDatabase: Record<string, CountryData> = {
       },
       language: {
         title: "Beijing Market Bargaining",
+        AGENT: "MARKET_VENDOR",
         tagline: "Practice Mandarin tones and phrases",
         description: "Navigate a bustling local market",
         situation:
@@ -118,6 +126,7 @@ export const countryDatabase: Record<string, CountryData> = {
       },
       education: {
         title: "Gaokao Preparation Season",
+        AGENT: "TEACHER",
         tagline: "Understand Chinese education values",
         description: "Visit a high school during exam prep",
         situation:
@@ -128,6 +137,7 @@ export const countryDatabase: Record<string, CountryData> = {
       },
       economy: {
         title: "Shanghai Business Meeting",
+        AGENT: "BUSINESS_PARTNER",
         tagline: "Build guanxi and partnerships",
         description: "Navigate Chinese business etiquette",
         situation:
@@ -138,6 +148,7 @@ export const countryDatabase: Record<string, CountryData> = {
       },
       "daily-life": {
         title: "Urban Chinese Lifestyle",
+        AGENT: "CITY_RESIDENT",
         tagline: "Experience modern Chinese daily life",
         description: "From tai chi to mobile payments",
         situation:
@@ -159,6 +170,7 @@ export const countryDatabase: Record<string, CountryData> = {
     scenarios: {
       culture: {
         title: "Village Fiesta",
+        AGENT: "FIESTA_ORGANIZER",
         tagline: "Dance, dine, and celebrate Spanish style",
         description: "Join a traditional celebration",
         situation:
@@ -169,6 +181,7 @@ export const countryDatabase: Record<string, CountryData> = {
       },
       language: {
         title: "Madrid Café Conversations",
+        AGENT: "CAFÉ_SERVER",
         tagline: "Master Castilian Spanish",
         description: "Practice regional variations",
         situation:
@@ -179,6 +192,7 @@ export const countryDatabase: Record<string, CountryData> = {
       },
       education: {
         title: "Spanish School System",
+        AGENT: "TEACHER",
         tagline: "Learn about education and culture",
         description: "Discuss siesta and school schedules",
         situation:
@@ -189,6 +203,7 @@ export const countryDatabase: Record<string, CountryData> = {
       },
       economy: {
         title: "Barcelona Business Lunch",
+        AGENT: "BUSINESS_COLLEAGUE",
         tagline: "Blend business with personal connection",
         description: "Navigate extended business meals",
         situation:
@@ -199,6 +214,7 @@ export const countryDatabase: Record<string, CountryData> = {
       },
       "daily-life": {
         title: "Spanish Daily Rhythm",
+        AGENT: "LOCAL_RESIDENT",
         tagline: "Adapt to the Spanish lifestyle",
         description: "Late dinners and afternoon siestas",
         situation:
@@ -220,6 +236,7 @@ export const countryDatabase: Record<string, CountryData> = {
     scenarios: {
       culture: {
         title: "French Dinner Party",
+        AGENT: "DINNER_HOST",
         tagline: "Engage in sophisticated conversation",
         description: "Experience French dining culture",
         situation:
@@ -230,6 +247,7 @@ export const countryDatabase: Record<string, CountryData> = {
       },
       language: {
         title: "Parisian Café Order",
+        AGENT: "WAITER",
         tagline: "Perfect your French pronunciation",
         description: "Practice formal and informal French",
         situation:
@@ -240,6 +258,7 @@ export const countryDatabase: Record<string, CountryData> = {
       },
       education: {
         title: "French Education System",
+        AGENT: "SCHOOL_COUNSELOR",
         tagline: "Explore grandes écoles and philosophy",
         description: "Learn about academic excellence",
         situation:
@@ -250,6 +269,7 @@ export const countryDatabase: Record<string, CountryData> = {
       },
       economy: {
         title: "Paris Business Meeting",
+        AGENT: "BUSINESS_MANAGER",
         tagline: "Navigate French formality and debate",
         description: "Present ideas intellectually",
         situation:
@@ -260,6 +280,7 @@ export const countryDatabase: Record<string, CountryData> = {
       },
       "daily-life": {
         title: "French Daily Elegance",
+        AGENT: "NEIGHBOR",
         tagline: "Embrace the art of living well",
         description: "From baguettes to apéritifs",
         situation:
@@ -281,6 +302,7 @@ export const countryDatabase: Record<string, CountryData> = {
     scenarios: {
       culture: {
         title: "Oktoberfest Experience",
+        AGENT: "BEER_GARDEN_SERVER",
         tagline: "Celebrate German traditions",
         description: "Join the world's largest festival",
         situation:
@@ -291,6 +313,7 @@ export const countryDatabase: Record<string, CountryData> = {
       },
       language: {
         title: "German Language Practice",
+        AGENT: "BAKERY_CLERK",
         tagline: "Master compound words and formality",
         description: "Navigate Sie and du",
         situation:
@@ -301,6 +324,7 @@ export const countryDatabase: Record<string, CountryData> = {
       },
       education: {
         title: "Dual Education System",
+        AGENT: "APPRENTICESHIP_COORDINATOR",
         tagline: "Explore vocational training",
         description: "Learn about apprenticeships",
         situation:
@@ -311,6 +335,7 @@ export const countryDatabase: Record<string, CountryData> = {
       },
       economy: {
         title: "Frankfurt Business Culture",
+        AGENT: "BANK_MANAGER",
         tagline: "Demonstrate German efficiency",
         description: "Practice punctuality and directness",
         situation:
@@ -321,6 +346,7 @@ export const countryDatabase: Record<string, CountryData> = {
       },
       "daily-life": {
         title: "German Daily Precision",
+        AGENT: "LOCAL_RESIDENT",
         tagline: "Experience structured routines",
         description: "From early starts to Kaffee und Kuchen",
         situation:
@@ -342,6 +368,7 @@ export const countryDatabase: Record<string, CountryData> = {
     scenarios: {
       culture: {
         title: "Traditional Tea Ceremony",
+        AGENT: "TEA_MASTER",
         tagline: "Experience wa and mindfulness",
         description: "Learn Japanese cultural practices",
         situation:
@@ -352,6 +379,7 @@ export const countryDatabase: Record<string, CountryData> = {
       },
       language: {
         title: "Japanese Honorifics",
+        AGENT: "OFFICE_RECEPTIONIST",
         tagline: "Master keigo and politeness levels",
         description: "Navigate formal and casual speech",
         situation:
@@ -362,6 +390,7 @@ export const countryDatabase: Record<string, CountryData> = {
       },
       education: {
         title: "Japanese School Life",
+        AGENT: "HOMEROOM_TEACHER",
         tagline: "Understand group harmony values",
         description: "Explore entrance exams and clubs",
         situation:
@@ -372,6 +401,7 @@ export const countryDatabase: Record<string, CountryData> = {
       },
       economy: {
         title: "Tokyo Business Etiquette",
+        AGENT: "COMPANY_SUPERVISOR",
         tagline: "Build consensus and respect hierarchy",
         description: "Master business card exchange",
         situation:
@@ -382,6 +412,7 @@ export const countryDatabase: Record<string, CountryData> = {
       },
       "daily-life": {
         title: "Japanese Urban Life",
+        AGENT: "STATION_ATTENDANT",
         tagline: "Navigate modern Tokyo",
         description: "From train commutes to late-night ramen",
         situation:
@@ -403,6 +434,7 @@ export const countryDatabase: Record<string, CountryData> = {
     scenarios: {
       culture: {
         title: "Diwali Festival of Lights",
+        AGENT: "FAMILY_MEMBER",
         tagline: "Celebrate with fireworks and sweets",
         description: "Join a traditional celebration",
         situation:
@@ -413,6 +445,7 @@ export const countryDatabase: Record<string, CountryData> = {
       },
       language: {
         title: "Delhi Market Hinglish",
+        AGENT: "SHOPKEEPER",
         tagline: "Practice Hindi and English mix",
         description: "Navigate urban Indian communication",
         situation:
@@ -423,6 +456,7 @@ export const countryDatabase: Record<string, CountryData> = {
       },
       education: {
         title: "Indian Education System",
+        AGENT: "COLLEGE_ADMISSIONS_OFFICER",
         tagline: "Explore competitive academics",
         description: "Learn about entrance exams",
         situation:
@@ -433,6 +467,7 @@ export const countryDatabase: Record<string, CountryData> = {
       },
       economy: {
         title: "Bangalore Tech Hub",
+        AGENT: "IT_PROJECT_MANAGER",
         tagline: "Navigate India's innovation scene",
         description: "Discuss startups and tradition",
         situation:
@@ -443,6 +478,7 @@ export const countryDatabase: Record<string, CountryData> = {
       },
       "daily-life": {
         title: "Vibrant Indian Daily Life",
+        AGENT: "LOCAL_RESIDENT",
         tagline: "Experience diverse culture",
         description: "From chai to bustling streets",
         situation:
@@ -464,6 +500,7 @@ export const countryDatabase: Record<string, CountryData> = {
     scenarios: {
       culture: {
         title: "Carnival in Rio",
+        AGENT: "SAMBA_INSTRUCTOR",
         tagline: "Dance to samba and celebrate life",
         description: "Join the world's biggest party",
         situation:
@@ -474,6 +511,7 @@ export const countryDatabase: Record<string, CountryData> = {
       },
       language: {
         title: "Brazilian Portuguese",
+        AGENT: "BEACH_VENDOR",
         tagline: "Learn the musical rhythm",
         description: "Practice beach conversations",
         situation:
@@ -484,6 +522,7 @@ export const countryDatabase: Record<string, CountryData> = {
       },
       education: {
         title: "Brazilian Education",
+        AGENT: "SCHOOL_ADMINISTRATOR",
         tagline: "Understand the ENEM system",
         description: "Explore educational challenges",
         situation:
@@ -494,6 +533,7 @@ export const countryDatabase: Record<string, CountryData> = {
       },
       economy: {
         title: "São Paulo Business",
+        AGENT: "BUSINESS_PARTNER",
         tagline: "Build warm professional relationships",
         description: "Navigate Brazilian flexibility",
         situation:
@@ -504,6 +544,7 @@ export const countryDatabase: Record<string, CountryData> = {
       },
       "daily-life": {
         title: "Brazilian Lifestyle",
+        AGENT: "LOCAL_RESIDENT",
         tagline: "Embrace beach culture and joy",
         description: "From beaches to social gatherings",
         situation:

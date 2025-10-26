@@ -4,6 +4,7 @@ import type React from "react"
 
 import { useState, useRef, useEffect, use } from "react"
 import { useRouter } from "next/navigation"
+import { useSelection } from "@/context/selection-context"
 import { getCountryData, type ScenarioDetail } from "@/lib/country-data"
 import { motion, useScroll, useTransform, useInView } from "framer-motion"
 import { Check, Users, Languages, GraduationCap, Briefcase, Coffee, ArrowLeft } from "lucide-react"
@@ -145,6 +146,7 @@ function ScrollFadeIn({ children, delay = 0 }: { children: React.ReactNode; dela
 
 function CountryPageClient({ slug }: { slug: string }) {
   const router = useRouter()
+  const { setSelectedScenario: setCtxScenario, setSelectedAgent: setCtxAgent } = useSelection()
   const countryData = getCountryData(slug)
   const [selectedScenario, setSelectedScenario] = useState<ScenarioType | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
@@ -181,6 +183,13 @@ function CountryPageClient({ slug }: { slug: string }) {
 
   const handleScenarioClick = (type: ScenarioType, data: ScenarioDetail) => {
     playClickSound()
+    // Set global context immediately on click
+    try {
+      // Store situation text as selected scenario
+      setCtxScenario(data.situation)
+      if (data?.AGENT) setCtxAgent(data.AGENT)
+    } catch {}
+    // Local UI state
     setSelectedScenario(type)
     setModalScenario({ type, data })
     setModalOpen(true)
@@ -189,6 +198,14 @@ function CountryPageClient({ slug }: { slug: string }) {
   const handleContinue = () => {
     if (!selectedScenario) return
     playClickSound()
+    // Save scenario and agent into global context before navigating
+    try {
+      const scenarioData = countryData?.scenarios[selectedScenario]
+      const agent = scenarioData?.AGENT as string | undefined
+      // Ensure the situation text is set
+      if (scenarioData?.situation) setCtxScenario(scenarioData.situation)
+      if (agent) setCtxAgent(agent)
+    } catch {}
     setIsTransitioning(true)
     setTimeout(() => {
       router.push(`/chat/${slug}?scenario=${selectedScenario}`)
