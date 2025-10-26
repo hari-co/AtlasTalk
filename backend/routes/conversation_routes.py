@@ -5,7 +5,7 @@ from bson import ObjectId
 from backend.models.conversation_models import Message, ConversationCreate
 from backend.services.conversation import (
 	messageAgent,
-	_get_openai_client_for_agent,
+	_get_client_for_agent,
 )
 
 router = APIRouter(prefix="/conversations", tags=["conversations"])
@@ -47,10 +47,16 @@ async def add_message(conversation_id: str, message: Message, request: Request):
 		await coll.update_one({"_id": oid}, {"$push": {"messages": msg_doc}})
 		return {"ok": True}
 
-	# Agent-backed conversation: delegate to service
-	client = _get_openai_client_for_agent(agent_name)
+	# Agent-backed conversation: delegate to service (supports DO agents and Gemini)
+	client = _get_client_for_agent(agent_name)
 	try:
-		result = await messageAgent(client, conversation_id, message.role, message.content)
+		result = await messageAgent(
+			client,
+			conversation_id,
+			message.role,
+			message.content,
+			db=request.app.state._mongo_db,
+		)
 	except Exception as exc:
 		import logging
 
