@@ -12,7 +12,7 @@ import { Check, Users, Languages, GraduationCap, Briefcase, Coffee, ArrowLeft } 
 type ScenarioType = "culture" | "language" | "education" | "economy" | "daily-life"
 
 // Icon mapping for scenario types
-const scenarioIcons = {
+const scenarioIcons: Record<ScenarioType, any> = {
   culture: Users,
   language: Languages,
   education: GraduationCap,
@@ -79,7 +79,7 @@ function AmbientBlurZones() {
         }}
       />
       <motion.div
-        className="absolute -right-1/4 bottom-1/4 h-[600px] w-[600px] rounded-full bg-purple-500/20 blur-[120px]"
+        className="absolute -right-1/4 bottom-1/4 h-[600px] w-[600px] rounded-full bg-blue-500/20 blur-[120px]"
         animate={{
           scale: [1, 1.3, 1],
           opacity: [0.2, 0.4, 0.2],
@@ -92,7 +92,7 @@ function AmbientBlurZones() {
         }}
       />
       <motion.div
-        className="absolute left-1/2 top-1/2 h-[400px] w-[400px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-500/10 blur-[100px]"
+        className="absolute left-1/2 top-1/2 h-[400px] w-[400px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-500/10 blur-[100px]"
         animate={{
           scale: [1, 1.4, 1],
           opacity: [0.1, 0.3, 0.1],
@@ -245,7 +245,7 @@ function CountryPageClient({ slug }: { slug: string }) {
 
       <div className="pointer-events-none fixed inset-0 z-0">
         <motion.div
-          className="absolute inset-0 bg-gradient-to-br from-blue-600/20 via-purple-600/20 to-pink-600/20"
+          className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-blue-800/10 to-slate-900/20"
           animate={{
             backgroundPosition: ["0% 0%", "100% 100%", "0% 0%"],
           }}
@@ -404,7 +404,7 @@ function CountryPageClient({ slug }: { slug: string }) {
                         </p>
                       </div>
 
-                      <div className="absolute -bottom-20 -right-20 h-40 w-40 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 opacity-0 blur-3xl transition-opacity group-hover:opacity-100" />
+                      <div className="absolute -bottom-20 -right-20 h-40 w-40 rounded-full bg-gradient-to-br from-blue-500/20 to-blue-600/20 opacity-0 blur-3xl transition-opacity group-hover:opacity-100" />
                     </motion.div>
                   </ScrollFadeIn>
                 )
@@ -430,7 +430,7 @@ function CountryPageClient({ slug }: { slug: string }) {
           {/* <motion.button
             onClick={handleContinue}
             disabled={!selectedScenario}
-            className="rounded-full bg-gradient-to-r from-blue-500 to-purple-500 px-8 py-3 font-medium transition-all hover:shadow-lg hover:shadow-blue-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="rounded-full bg-gradient-to-r from-blue-500 to-blue-600 px-8 py-3 font-medium transition-all hover:shadow-lg hover:shadow-blue-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
             whileHover={selectedScenario ? { scale: 1.05 } : {}}
             whileTap={selectedScenario ? { scale: 0.95 } : {}}
           >

@@ -7,6 +7,10 @@ import * as d3 from 'd3'
 import * as topojson from 'topojson-client'
 import { getCountryData } from '@/lib/country-data'
 import { useSelection } from '@/context/selection-context'
+import { FadeContent } from '@/components/ui/fadein'
+import { Squares } from '@/components/ui/squares-background'
+import { GooeyText } from '@/components/ui/gooey-text-morphing'
+import { DestinationCard } from '@/components/ui/destination-card'
 
 interface CountryFeature {
   type: 'Feature'
@@ -33,15 +37,6 @@ interface WorldAtlasTopology {
 
 const WORLD_ATLAS_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
 
-// Optional country info shape from getCountryData
-interface CountryInfo {
-  name?: string
-  description?: string
-  imageUrl?: string
-  language?: string
-  heroImage?: string
-}
-
 // Map country IDs from world-atlas to our slugs
 const countryIdToSlug: Record<string, string> = {
   '840': 'united-states', // USA
@@ -57,7 +52,10 @@ const countryIdToSlug: Record<string, string> = {
 export default function InteractiveMap() {
   const [countries, setCountries] = useState<CountryFeature[]>([])
   const [activeCountry, setActiveCountry] = useState<CountryFeature | null>(null)
-  const [showIntro, setShowIntro] = useState<boolean>(true)
+  const [showTitle, setShowTitle] = useState<boolean>(false)
+  const [hideTitle, setHideTitle] = useState<boolean>(false)
+  const [showMap, setShowMap] = useState<boolean>(false)
+  const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null)
   
   const router = useRouter()
   const { setSelectedCountry, setSelectedLanguage } = useSelection()
@@ -84,11 +82,16 @@ export default function InteractiveMap() {
     fetchData()
   }, [])
 
-  // Intro overlay: start fully visible, then fade out quickly
+  // Loading sequence: show title after 300ms, hide it after 2500ms, show map after title fully fades (3500ms)
   useEffect(() => {
-    setShowIntro(true)
-    const timer = setTimeout(() => setShowIntro(false), 1500)
-    return () => clearTimeout(timer)
+    const titleTimer = setTimeout(() => setShowTitle(true), 300)
+    const hideTitleTimer = setTimeout(() => setHideTitle(true), 2500)
+    const mapTimer = setTimeout(() => setShowMap(true), 3500)
+    return () => {
+      clearTimeout(titleTimer)
+      clearTimeout(hideTitleTimer)
+      clearTimeout(mapTimer)
+    }
   }, [])
 
   const width = 1200
@@ -102,17 +105,48 @@ export default function InteractiveMap() {
 
   const pathGenerator = useMemo(() => d3.geoPath().projection(projection), [projection])
 
-  const handleCountryMouseEnter = (country: CountryFeature) => {
+  const handleCountryMouseEnter = (country: CountryFeature, event: React.MouseEvent) => {
     setActiveCountry(country)
+    setMousePosition({ x: event.clientX, y: event.clientY })
+  }
+
+  const handleMouseMove = (event: React.MouseEvent) => {
+    if (activeCountry) {
+      setMousePosition({ x: event.clientX, y: event.clientY })
+    }
   }
 
   const handleMouseLeave = () => {
     setActiveCountry(null)
+    setMousePosition(null)
+  }
+
+  const playClickSound = () => {
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+      const oscillator = audioContext.createOscillator()
+      const gainNode = audioContext.createGain()
+      
+      oscillator.connect(gainNode)
+      gainNode.connect(audioContext.destination)
+      
+      oscillator.frequency.value = 800
+      oscillator.type = 'sine'
+      
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime)
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1)
+      
+      oscillator.start(audioContext.currentTime)
+      oscillator.stop(audioContext.currentTime + 0.1)
+    } catch (err) {
+      console.log('Audio play failed:', err)
+    }
   }
 
   const handleCountryClick = (country: CountryFeature) => {
     const slug = countryIdToSlug[country.id]
     if (slug) {
+      playClickSound()
       // Persist the selected country in context (slug-based)
       setSelectedCountry(slug)
       // Also persist the default language for the country if available
@@ -132,140 +166,226 @@ export default function InteractiveMap() {
     return countryIdToSlug[countryId] !== undefined
   }
 
-  // Active slug for the info panel (based on hovered country)
-  const activeSlug = useMemo(() => {
-    if (!activeCountry) return null
-    if (!isCountryAvailable(activeCountry.id)) return null
-    return countryIdToSlug[activeCountry.id] || null
-  }, [activeCountry])
-
-  // Fetch extra info (if available) for the active slug
-  const info: CountryInfo | null = useMemo(() => {
-    if (!activeSlug) return null
-    try {
-      return (getCountryData(activeSlug) as unknown) as CountryInfo
-    } catch {
-      return null
-    }
-  }, [activeSlug])
-
-  const displayName = info?.name ?? activeCountry?.properties?.name ?? null
-  const description = displayName
-    ? (info?.description ?? `Discover ${displayName}.`)
-    : 'Hover a highlighted country to see details.'
-  const imageUrl = displayName
-    ? (info?.imageUrl ?? info?.heroImage ?? `https://source.unsplash.com/800x600/?${encodeURIComponent(displayName)}`)
-    : null
-
   return (
-    <div className="relative h-screen w-screen overflow-hidden">
-      {/* Intro overlay with global blur */}
-      <AnimatePresence>
-        {showIntro && (
-          <>
-            {/* Full-screen blur/tint layer */}
-            <motion.div
-              key="intro-blur"
-              className="pointer-events-none absolute inset-0 z-40 bg-black/20 backdrop-blur-lg"
-              initial={{ opacity: 1 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.5, ease: 'easeInOut' }}
-            />
+    <div className="relative min-h-screen w-full overflow-hidden bg-black">
+      {/* Animated squares background */}
+      <div className="absolute inset-0 z-0">
+        <Squares
+          direction="diagonal"
+          speed={0.5}
+          squareSize={40}
+          borderColor="#1a1a1a"
+          hoverFillColor="#0a0a0a"
+        />
+      </div>
 
-            {/* Centered title */}
-            <motion.div
-              key="intro-text"
-              className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center"
-              initial={{ opacity: 1 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.5, ease: 'easeInOut' }}
+      {/* Title fade-in and fade-out */}
+      {showTitle && !hideTitle && (
+        <motion.div
+          className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center"
+          initial={{ opacity: 0, filter: "blur(10px)" }}
+          animate={{ opacity: 1, filter: "blur(0px)" }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 1.2, ease: "easeOut" }}
+        >
+          <h1
+            className="text-7xl md:text-8xl text-white tracking-tight"
+            style={{ fontFamily: "'Times New Roman', Times, serif", fontWeight: 700 }}
+          >
+            AtlasTalk
+          </h1>
+        </motion.div>
+      )}
+
+      {showTitle && hideTitle && (
+        <motion.div
+          className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center"
+          initial={{ opacity: 1, filter: "blur(0px)" }}
+          animate={{ opacity: 0, filter: "blur(10px)" }}
+          transition={{ duration: 0.8, ease: "easeIn" }}
+        >
+          <h1
+            className="text-7xl md:text-8xl text-white tracking-tight"
+            style={{ fontFamily: "'Times New Roman', Times, serif", fontWeight: 700 }}
+          >
+            AtlasTalk
+          </h1>
+        </motion.div>
+      )}
+
+      {/* Main content container */}
+      {showMap && (
+        <div className="relative z-10 min-h-screen w-full flex flex-col">
+          {/* Header Section with generous spacing */}
+          <header className="w-full pt-24 md:pt-32 pb-8 px-8">
+            <FadeContent
+              duration={1500}
+              easing="ease-out"
+              initialOpacity={0}
+              delay={300}
+              className="max-w-7xl mx-auto"
             >
-              <motion.div
-                className="rounded-full bg-white/10 px-8 py-4 text-6xl md:text-7xl text-white shadow-xl backdrop-blur-md"
-                style={{ fontFamily: "'Times New Roman', Times, serif", fontWeight: 700 }}
-                initial={{ y: 0 }}
-                animate={{ y: 0 }}
-                exit={{ y: 0 }}
-                transition={{ duration: 0.8, ease: 'easeOut' }}
-              >
-                AtlasTalk
-              </motion.div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-  <div className="h-[92vh] w-screen mt-10 md:mt-16 flex">
-        {/* Left: Map */}
-  <div className="relative h-full w-full flex-[3] min-w-0 rounded-none bg-transparent">
-          <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} className="block h-full w-full overflow-hidden">
-            <g>
-              <path
-                d={pathGenerator({ type: 'Sphere' }) || ''}
-                className="fill-transparent"
-              />
-              {countries.map((country) => {
-                const isCountryActive = activeCountry !== null && activeCountry.id === country.id
-                const isAvailable = isCountryAvailable(country.id)
+              <div className="text-center space-y-6">
+                <h2 className="text-sm md:text-base uppercase tracking-[0.3em] text-white/50 font-light">
+                  Language Learning Through Travel
+                </h2>
+                <div className="h-24 flex items-center justify-center">
+                  <GooeyText
+                    texts={["Explore", "Learn", "Connect", "Discover"]}
+                    morphTime={1.5}
+                    cooldownTime={0.5}
+                    textClassName="text-white text-5xl md:text-6xl font-bold tracking-tight"
+                  />
+                </div>
+                <p className="text-white/60 text-sm md:text-base max-w-md mx-auto leading-relaxed">
+                  Select a country to begin your immersive language journey
+                </p>
+              </div>
+            </FadeContent>
+          </header>
+
+          {/* Map Section with perfect centering and spacing */}
+          <main className="flex-1 w-full flex items-center justify-center px-8 py-4">
+            <FadeContent
+              duration={1500}
+              easing="ease-out"
+              initialOpacity={0}
+              className="w-full max-w-7xl"
+            >
+              <div className="relative w-full" style={{ aspectRatio: '16/9' }}>
+                <svg 
+                  width="100%" 
+                  height="100%" 
+                  viewBox={`0 0 ${width} ${height}`} 
+                  className="block w-full h-full"
+                  preserveAspectRatio="xMidYMid meet"
+                >
+                  <defs>
+                    {/* Radial gradient for subtle edge fade */}
+                    <radialGradient id="mapFade" cx="50%" cy="50%" r="50%">
+                      <stop offset="0%" stopColor="white" stopOpacity="1" />
+                      <stop offset="50%" stopColor="white" stopOpacity="1" />
+                      <stop offset="65%" stopColor="white" stopOpacity="0.95" />
+                      <stop offset="75%" stopColor="white" stopOpacity="0.85" />
+                      <stop offset="82%" stopColor="white" stopOpacity="0.7" />
+                      <stop offset="88%" stopColor="white" stopOpacity="0.5" />
+                      <stop offset="93%" stopColor="white" stopOpacity="0.3" />
+                      <stop offset="97%" stopColor="white" stopOpacity="0.15" />
+                      <stop offset="100%" stopColor="white" stopOpacity="0" />
+                    </radialGradient>
+                    <mask id="fadeMask">
+                      <rect width="100%" height="100%" fill="url(#mapFade)" />
+                    </mask>
+                  </defs>
+                  <g mask="url(#fadeMask)">
+                    <path
+                      d={pathGenerator({ type: 'Sphere' }) || ''}
+                      className="fill-transparent"
+                    />
+                    {countries.map((country) => {
+                      const isCountryActive = activeCountry !== null && activeCountry.id === country.id
+                      const isAvailable = isCountryAvailable(country.id)
+                      
+                      return (
+                        <React.Fragment key={`${country.id ?? "no-id"}-${country.properties?.name ?? "no-name"}`}>
+                          <path
+                            d={pathGenerator(country) || ''}
+                            className={`transition-all duration-300 ease-in-out stroke-slate-900 stroke-[0.5px] ${
+                              isAvailable
+                                ? `cursor-pointer ${
+                                    isCountryActive
+                                      ? 'fill-blue-400 drop-shadow-[0_0_12px_rgba(96,165,250,0.6)]'
+                                      : 'fill-blue-600 hover:fill-blue-500'
+                                  }`
+                                : 'fill-slate-700 cursor-default'
+                            }`}
+                            onMouseEnter={(e) => isAvailable && handleCountryMouseEnter(country, e)}
+                            onMouseMove={(e) => isAvailable && handleMouseMove(e)}
+                            onMouseLeave={() => isAvailable && handleMouseLeave()}
+                            onClick={() => isAvailable && handleCountryClick(country)}
+                          />
+                        </React.Fragment>
+                      )
+                    })}
+                  </g>
+                </svg>
+              </div>
+            </FadeContent>
+          </main>
+
+          {/* Footer section with subtle instruction */}
+          <footer className="w-full pb-12 px-8">
+            <FadeContent
+              duration={1500}
+              easing="ease-out"
+              initialOpacity={0}
+              delay={800}
+              className="max-w-7xl mx-auto"
+            >
+              <div className="text-center space-y-4">
+                <p className="text-white/40 text-xs md:text-sm tracking-wide">
+                  Click on a highlighted country to explore
+                </p>
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-blue-600"></div>
+                  <span className="text-white/30 text-xs">Available destinations</span>
+                </div>
+              </div>
+            </FadeContent>
+          </footer>
+        </div>
+      )}
+
+      {/* Hover Destination Card */}
+      <AnimatePresence>
+        {activeCountry && mousePosition && isCountryAvailable(activeCountry.id) && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="fixed z-50 pointer-events-none"
+            style={{
+              left: `${mousePosition.x + 20}px`,
+              top: `${mousePosition.y - 175}px`,
+            }}
+          >
+            <div className="w-[280px] h-[350px]">
+              {(() => {
+                const slug = countryIdToSlug[activeCountry.id]
+                const countryData = getCountryData(slug)
+                
+                if (!countryData) return null
+                
+                const scenarioCount = Object.keys(countryData.scenarios).length
+                
+                // Theme color mapping for each country
+                const themeColors: Record<string, string> = {
+                  'united-states': '220 70% 45%',
+                  'china': '0 70% 45%',
+                  'spain': '40 80% 50%',
+                  'france': '220 60% 50%',
+                  'germany': '0 0% 30%',
+                  'japan': '350 70% 50%',
+                  'india': '30 70% 50%',
+                  'brazil': '140 50% 35%',
+                }
                 
                 return (
-                  <React.Fragment key={`${country.id ?? "no-id"}-${country.properties?.name ?? "no-name"}`}>
-                    <path
-                      d={pathGenerator(country) || ''}
-                      className={`transition-all duration-200 ease-in-out stroke-slate-900 stroke-[0.5px] ${
-                        isAvailable
-                          ? `cursor-pointer ${
-                              isCountryActive
-                                ? 'fill-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]'
-                                : 'fill-cyan-600 hover:fill-cyan-500'
-                            }`
-                          : 'fill-slate-600 cursor-default'
-                      }`}
-                      onMouseEnter={() => isAvailable && handleCountryMouseEnter(country)}
-                      onMouseLeave={() => isAvailable && handleMouseLeave()}
-                      onClick={() => isAvailable && handleCountryClick(country)}
-                    />
-                  </React.Fragment>
+                  <DestinationCard
+                    imageUrl={countryData.heroImage || `https://source.unsplash.com/800x600/?${encodeURIComponent(countryData.name)}`}
+                    location={countryData.name}
+                    flag={countryData.flag}
+                    stats={`${scenarioCount} Scenarios • ${countryData.language}`}
+                    href={`/country/${slug}`}
+                    themeColor={themeColors[slug] || '220 70% 45%'}
+                  />
                 )
-              })}
-            </g>
-          </svg>
-        </div>
-        {/* Right: Info panel */}
-  <aside className="relative h-full w-full flex-[1] max-w-[440px] border-l border-white/10 bg-black/20 backdrop-blur-sm p-4 md:p-6 overflow-y-auto">
-          <div className="mx-auto w-full">
-            {displayName ? (
-              <>
-                {imageUrl && (
-                  <div className="mb-4 overflow-hidden rounded-lg border border-white/10 aspect-video">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={imageUrl}
-                      alt={displayName}
-                      className="h-full w-full object-cover"
-                      onError={(e) => {
-                        const fallback = `https://source.unsplash.com/800x600/?${encodeURIComponent(displayName || 'China')}`
-                        // Prevent infinite loop if fallback also fails
-                        if ((e.currentTarget as HTMLImageElement).src !== fallback) {
-                          (e.currentTarget as HTMLImageElement).onerror = null
-                          ;(e.currentTarget as HTMLImageElement).src = fallback
-                        }
-                      }}
-                    />
-                  </div>
-                )}
-                <h2 className="text-2xl md:text-3xl font-semibold text-white">{displayName}</h2>
-                <p className="mt-2 text-sm md:text-base text-slate-200/80">{description}</p>
-              </>
-            ) : (
-              <div className="flex h-full w-full items-center justify-center text-slate-200/80">
-                Hover a highlighted country to see details.
-              </div>
-            )}
-          </div>
-        </aside>
-      </div>
+              })()}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

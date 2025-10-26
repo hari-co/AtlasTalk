@@ -5,9 +5,13 @@ import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 import { SelectionProvider } from "@/context/selection-context"
 
-const _geist = Geist({ subsets: ["latin"] })
-const _geistMono = Geist_Mono({ subsets: ["latin"] })
-const _playfair = Playfair_Display({ subsets: ["latin"] })
+const geist = Geist({ subsets: ["latin"] })
+const geistMono = Geist_Mono({ subsets: ["latin"] })
+const playfair = Playfair_Display({ 
+  subsets: ["latin"],
+  weight: ["400", "700", "900"],
+  variable: '--font-playfair'
+})
 
 export const metadata: Metadata = {
   title: "AtlasTalk - Explore the World",
@@ -22,7 +26,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body className={`font-sans antialiased`}>
+      <body className={`font-sans antialiased ${playfair.variable}`}>
         <SelectionProvider>
           {children}
         </SelectionProvider>

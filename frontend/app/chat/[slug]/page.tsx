@@ -8,7 +8,7 @@ import { useSelection } from "@/context/selection-context"
 import { getCountryData } from "@/lib/country-data"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ArrowLeft, Send, MapPin, Users, BookOpen, Lightbulb, CheckCircle2, Circle, Target } from "lucide-react"
+import { ArrowLeft, Send, MapPin, Users, BookOpen, CheckCircle2, Circle, Target } from "lucide-react"
 
 interface Message {
   id: string
@@ -32,7 +32,6 @@ function ChatPageClient({ slug }: { slug: string }) {
   const [isTyping, setIsTyping] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [isListening, setIsListening] = useState(false)
-  const [showHints, setShowHints] = useState(false)
   const [goals, setGoals] = useState<Array<{ id: number; text: string; completed: boolean }>>([])
   const [isRecording, setIsRecording] = useState(false)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
@@ -654,44 +653,6 @@ function ChatPageClient({ slug }: { slug: string }) {
     </p>
   </div>
 
-  {/* Lightbulb button — fixed bottom-left */}
-  <div className="absolute bottom-6 left-6">
-    <Button
-      variant="ghost"
-      size="icon"
-      className="h-14 w-14 rounded-full hover:bg-primary/10"
-      onClick={(e) => {
-        e.stopPropagation()
-        setShowHints(!showHints)
-      }}
-    >
-      <Lightbulb
-        className={`h-7 w-7 transition-colors ${
-          showHints
-            ? "text-yellow-500 fill-yellow-500"
-            : "text-muted-foreground"
-        }`}
-      />
-    </Button>
-  </div>
-
-  {/* Hint card */}
-  {/* {showHints && (
-    <div className="absolute bottom-6 left-24 animate-in fade-in slide-in-from-left-8 duration-300">
-      <div
-        className="bg-card border-2 border-primary/20 rounded-xl px-6 py-4 shadow-2xl cursor-pointer hover:bg-accent hover:border-primary/40 transition-all min-w-[280px]"
-        onClick={() => {
-          setInput("What's the weather like?")
-          setShowHints(false)
-        }}
-      >
-        <p className="text-base font-medium">💡 Quick Suggestion</p>
-        <p className="text-sm text-muted-foreground mt-1">
-          What's the weather like?
-        </p>
-      </div>
-    </div>
-  )} */}
 </main>
 
 
