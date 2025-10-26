@@ -3,7 +3,7 @@ import logging
 from bson import ObjectId
 
 from backend.models.agent import AgentSetupRequest, AgentSetupResponse
-from backend.services.conversation import setupAgent, _get_motor_client, MONGODB_DB
+from backend.services.conversation import setupAgent
 
 router = APIRouter(prefix="/agents", tags=["agents"])
 
@@ -17,11 +17,12 @@ async def route_setup_agent(agent: str, payload: AgentSetupRequest, request: Req
     country = payload.country
     language = payload.language
     user_id = payload.user_id
+    scenario_prompt = payload.scenario_prompt
 
     try:
         # Prefer using the already-initialized DB attached to app.state
-        client, response, conversation_id = await setupAgent(
-            agent, country, language, db=request.app.state._mongo_db
+        client, response, conversation_id, g_client, g_response, gemini_conversation_id = await setupAgent(
+            agent, country, language, db=request.app.state._mongo_db, scenario_prompt=scenario_prompt
         )
     except Exception as exc:
         logging.exception("Agent setup failed")
@@ -39,8 +40,12 @@ async def route_setup_agent(agent: str, payload: AgentSetupRequest, request: Req
             await db.conversations.update_one(
                 {"_id": ObjectId(conversation_id)}, {"$set": {"user_id": uid}}
             )
+            if gemini_conversation_id:
+                await db.conversations.update_one(
+                    {"_id": ObjectId(gemini_conversation_id)}, {"$set": {"user_id": uid}}
+                )
         except Exception as exc:
             logging.exception("Failed to attach user_id to conversation %s", conversation_id)
             raise HTTPException(status_code=502, detail=f"Failed to attach user_id: {exc}")
 
-    return AgentSetupResponse(conversation_id=conversation_id, agent=agent)
+    return AgentSetupResponse(conversation_id=conversation_id, agent=agent, gemini_conversation_id=gemini_conversation_id)
