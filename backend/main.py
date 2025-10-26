@@ -1,14 +1,20 @@
 from fastapi import FastAPI
 from dotenv import load_dotenv
 import os
-
-# Load environment variables from .env file
-load_dotenv()
-
-# Access private keys
-taxi_key = os.getenv("TAXI_PRIVATE_KEY")
+from backend.services.db import init_db, close_db
+from backend.services.conversation import router as conv_router
 
 app = FastAPI()
+
+app.include_router(conv_router)
+
+@app.on_event("startup")
+async def startup_event():
+    init_db(app)
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    close_db(app)
 
 @app.get("/")
 async def root():
