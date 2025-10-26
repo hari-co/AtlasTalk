@@ -6,7 +6,7 @@ import { useState, useRef, useEffect, use } from "react"
 import { useRouter } from "next/navigation"
 import { getCountryData, type ScenarioDetail } from "@/lib/country-data"
 import { motion, useScroll, useTransform, useInView } from "framer-motion"
-import { Check, Users, Languages, GraduationCap, Briefcase, Coffee } from "lucide-react"
+import { Check, Users, Languages, GraduationCap, Briefcase, Coffee, ArrowLeft } from "lucide-react"
 
 type ScenarioType = "culture" | "language" | "education" | "economy" | "daily-life"
 
@@ -216,6 +216,16 @@ function CountryPageClient({ slug }: { slug: string }) {
       <FloatingParticles />
       <AmbientBlurZones />
 
+      {/* Go Back button top-left */}
+      <button
+        onClick={() => router.back()}
+        aria-label="Go back"
+        className="fixed left-4 top-4 z-50 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-white backdrop-blur-md transition-colors hover:bg-white/20"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Back
+      </button>
+
       <div className="pointer-events-none fixed inset-0 z-0">
         <motion.div
           className="absolute inset-0 bg-gradient-to-br from-blue-600/20 via-purple-600/20 to-pink-600/20"
@@ -400,7 +410,7 @@ function CountryPageClient({ slug }: { slug: string }) {
               </p>
             </div>
           </div>
-          <motion.button
+          {/* <motion.button
             onClick={handleContinue}
             disabled={!selectedScenario}
             className="rounded-full bg-gradient-to-r from-blue-500 to-purple-500 px-8 py-3 font-medium transition-all hover:shadow-lg hover:shadow-blue-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -408,7 +418,7 @@ function CountryPageClient({ slug }: { slug: string }) {
             whileTap={selectedScenario ? { scale: 0.95 } : {}}
           >
             Continue to Chat
-          </motion.button>
+          </motion.button> */}
         </div>
       </div>
 
@@ -465,7 +475,7 @@ function CountryPageClient({ slug }: { slug: string }) {
                   setModalOpen(false)
                   handleContinue()
                 }}
-                className="rounded-full bg-gradient-to-r from-blue-500 to-purple-500 px-6 py-3 font-medium transition-all hover:shadow-lg hover:shadow-blue-500/50"
+                className="rounded-full bg-blue-500 px-6 py-3 font-medium transition-all hover:shadow-lg hover:shadow-blue-500/50"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
