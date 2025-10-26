@@ -33,11 +33,7 @@ function ChatPageClient({ slug }: { slug: string }) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [isListening, setIsListening] = useState(false)
   const [showHints, setShowHints] = useState(false)
-  const [goals, setGoals] = useState([
-    { id: 1, text: "Practice basic greetings", completed: false },
-    { id: 2, text: "Learn about local customs", completed: false },
-    { id: 3, text: "Ask about transportation", completed: false },
-  ])
+  const [goals, setGoals] = useState<Array<{ id: number; text: string; completed: boolean }>>([])
   const [isRecording, setIsRecording] = useState(false)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
@@ -45,6 +41,8 @@ function ChatPageClient({ slug }: { slug: string }) {
   const audioContextRef = useRef<AudioContext | null>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
   const animationFrameRef = useRef<number | null>(null)
+  const [isAISpeaking, setIsAISpeaking] = useState(false)
+  const aiSpeakingIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   // Conversation IDs from backend agent setup
   const [geminiConversationID, setGeminiConversationID] = useState<string | null>(null)
@@ -195,25 +193,25 @@ function ChatPageClient({ slug }: { slug: string }) {
     setIsTyping(true)
 
     // Simulate AI response
-    setTimeout(() => {
-      const responses = [
-        `That's a great question! In ${countryData.name}, we have a unique perspective on that. Let me share my experience...`,
-        `I'm glad you asked! Here in ${countryData.name}, things work a bit differently. From my daily life, I can tell you...`,
-        `Interesting! In our culture, we approach this in a special way. Let me explain how we do things here...`,
-        `That reminds me of something we often do in ${countryData.name}. It's quite fascinating actually...`,
-        `Great topic! As someone who grew up here, I can share some insights about how we handle this in ${countryData.name}...`,
-      ]
+    // setTimeout(() => {
+    //   const responses = [
+    //     `That's a great question! In ${countryData.name}, we have a unique perspective on that. Let me share my experience...`,
+    //     `I'm glad you asked! Here in ${countryData.name}, things work a bit differently. From my daily life, I can tell you...`,
+    //     `Interesting! In our culture, we approach this in a special way. Let me explain how we do things here...`,
+    //     `That reminds me of something we often do in ${countryData.name}. It's quite fascinating actually...`,
+    //     `Great topic! As someone who grew up here, I can share some insights about how we handle this in ${countryData.name}...`,
+    //   ]
 
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: responses[Math.floor(Math.random() * responses.length)],
-        timestamp: new Date(),
-      }
+    //   const assistantMessage: Message = {
+    //     id: (Date.now() + 1).toString(),
+    //     role: "assistant",
+    //     content: responses[Math.floor(Math.random() * responses.length)],
+    //     timestamp: new Date(),
+    //   }
 
-      setMessages((prev) => [...prev, assistantMessage])
-      setIsTyping(false)
-    }, 1500)
+    //   setMessages((prev) => [...prev, assistantMessage])
+    //   setIsTyping(false)
+    // }, 1500)
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -229,14 +227,122 @@ function ChatPageClient({ slug }: { slug: string }) {
     const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount)
     analyserRef.current.getByteFrequencyData(dataArray)
     
-    // Calculate average volume with moderate boost
+    // Calculate average volume with same boost as AI (for consistency)
     const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length
-    const boostedLevel = Math.min((average / 128) * 1.5, 1) // Moderate amplification
+    const normalizedLevel = Math.min((average / 128) * 2, 1) // 2x boost (same sensitivity as AI)
+    const boostedLevel = Math.max(normalizedLevel, 0.15) // Minimum baseline visibility
     
     setAudioLevel(boostedLevel)
     
     animationFrameRef.current = requestAnimationFrame(analyzeAudio)
   }
+
+  // Analyze audio using amplitude-based pulsing
+  const startAISpeakingWithAudio = (audioBlob: Blob) => {
+    setIsAISpeaking(true)
+    setIsListening(true)
+    
+    try {
+      // Create audio context for analyzing the audio
+      const audioCtx = new AudioContext()
+      
+      // Decode the audio blob
+      audioBlob.arrayBuffer().then(arrayBuffer => {
+        return audioCtx.decodeAudioData(arrayBuffer)
+      }).then(audioBuffer => {
+        // Get raw audio data for analysis
+        const rawData = audioBuffer.getChannelData(0)
+        const samples = 70 // Number of samples to analyze
+        const blockSize = Math.floor(rawData.length / samples)
+        const filteredData = []
+        
+        // Extract amplitude peaks
+        for (let i = 0; i < samples; i++) {
+          let blockStart = blockSize * i
+          let sum = 0
+          for (let j = 0; j < blockSize; j++) {
+            sum += Math.abs(rawData[blockStart + j])
+          }
+          filteredData.push(sum / blockSize)
+        }
+        
+        // Normalize the data
+        const maxAmplitude = Math.max(...filteredData)
+        const normalizedData = filteredData.map(n => n / maxAmplitude)
+        
+        // Animate based on actual audio waveform
+        let currentIndex = 0
+        const duration = audioBuffer.duration
+        const intervalMs = (duration / samples) * 1000
+        
+        aiSpeakingIntervalRef.current = setInterval(() => {
+          if (currentIndex >= normalizedData.length) {
+            return
+          }
+          
+          // Boost the amplitude for visibility
+          const boostedLevel = Math.min(normalizedData[currentIndex] * 2.5, 1)
+          setAudioLevel(Math.max(boostedLevel, 0.15)) // Minimum baseline
+          currentIndex++
+        }, intervalMs)
+        
+      }).catch(err => {
+        console.error('Audio decoding error:', err)
+        // Fallback to sine wave
+        useFallbackPulse()
+      })
+      
+      audioContextRef.current = audioCtx
+      
+    } catch (err) {
+      console.error('Audio analysis error:', err)
+      useFallbackPulse()
+    }
+  }
+  
+  // Fallback pulse animation
+  const useFallbackPulse = () => {
+    let time = 0
+    aiSpeakingIntervalRef.current = setInterval(() => {
+      time += 0.15
+      const sineWave = Math.sin(time * 2.5) * 0.35 + 0.5
+      const randomNoise = (Math.random() - 0.5) * 0.25
+      const level = Math.max(0.15, Math.min(0.85, sineWave + randomNoise))
+      setAudioLevel(level)
+    }, 60)
+  }
+
+  const stopAISpeaking = () => {
+    // Stop animation frame
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current)
+      animationFrameRef.current = null
+    }
+    
+    // Stop fallback interval
+    if (aiSpeakingIntervalRef.current) {
+      clearInterval(aiSpeakingIntervalRef.current)
+      aiSpeakingIntervalRef.current = null
+    }
+    
+    // Close audio context
+    if (audioContextRef.current) {
+      audioContextRef.current.close()
+      audioContextRef.current = null
+    }
+    
+    analyserRef.current = null
+    setIsAISpeaking(false)
+    setIsListening(false)
+    setAudioLevel(0)
+  }
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      stopAISpeaking()
+    }
+  }, [])
 
   const handleRecordingToggle = async () => {
     if (!isRecording) {
@@ -245,7 +351,7 @@ function ChatPageClient({ slug }: { slug: string }) {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
         const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' })
         
-        // Set up audio analysis
+        // Set up real-time audio analysis for live feedback
         const audioContext = new AudioContext()
         const source = audioContext.createMediaStreamSource(stream)
         const analyser = audioContext.createAnalyser()
@@ -255,7 +361,7 @@ function ChatPageClient({ slug }: { slug: string }) {
         audioContextRef.current = audioContext
         analyserRef.current = analyser
         
-        // Start analyzing audio
+        // Start analyzing audio in real-time
         analyzeAudio()
         
         audioChunksRef.current = []
@@ -272,14 +378,18 @@ function ChatPageClient({ slug }: { slug: string }) {
           // Stop all tracks
           stream.getTracks().forEach(track => track.stop())
           
-          // Clean up audio analysis
+          // Clean up user recording audio analysis (not AI playback)
           if (animationFrameRef.current) {
             cancelAnimationFrame(animationFrameRef.current)
+            animationFrameRef.current = null
           }
-          if (audioContextRef.current) {
+          if (audioContextRef.current && !isAISpeaking) {
             audioContextRef.current.close()
+            audioContextRef.current = null
           }
+          analyserRef.current = null
           setAudioLevel(0)
+          setIsListening(false)
           
           // Send audio to backend for speech-to-text
           try {
@@ -400,8 +510,25 @@ function ChatPageClient({ slug }: { slug: string }) {
                     const audioBlobResp = await ttsRes.blob()
                     const audioUrl = URL.createObjectURL(audioBlobResp)
                     const audio = new Audio(audioUrl)
-                    audio.play()
-                    audio.onended = () => URL.revokeObjectURL(audioUrl)
+                    
+                    // Start analyzing the audio blob for visualization
+                    startAISpeakingWithAudio(audioBlobResp)
+                    
+                    audio.onended = () => {
+                      URL.revokeObjectURL(audioUrl)
+                      stopAISpeaking()
+                    }
+                    
+                    audio.onerror = () => {
+                      console.error('Audio playback error')
+                      stopAISpeaking()
+                    }
+                    
+                    // Play the audio
+                    audio.play().catch(err => {
+                      console.error('Audio play failed:', err)
+                      stopAISpeaking()
+                    })
                   } else {
                     console.warn('TTS request failed', ttsRes.status)
                   }
@@ -479,35 +606,36 @@ function ChatPageClient({ slug }: { slug: string }) {
      className="cursor-pointer relative"
      onClick={handleRecordingToggle}
    >
-     {/* Outer glow ring - subtle vibration with audio */}
-     <div
-       className={`absolute inset-0 w-80 h-80 -translate-x-8 -translate-y-8 rounded-full bg-gradient-to-r from-primary/20 via-primary/15 to-primary/10 blur-3xl transition-all duration-100 ${
-         isListening ? "scale-150 opacity-100" : "scale-100 opacity-30"
-       }`}
-       style={{
-         opacity: isRecording ? 0.3 + audioLevel * 0.4 : undefined,
-       }}
-     />
-     
-     {/* Central glow - subtle vibration with audio */}
-     <div
-       className={`w-64 h-64 rounded-full bg-primary/25 blur-2xl transition-all duration-100 ${
-         isListening ? "scale-150 opacity-100" : "scale-100 opacity-40"
-       }`}
-       style={{
-         opacity: isRecording ? 0.4 + audioLevel * 0.5 : undefined,
-       }}
-     />
-     
-     {/* Inner core - subtle vibration with audio */}
-     <div
-       className={`absolute inset-0 w-64 h-64 rounded-full bg-primary/15 blur-xl transition-all duration-100 ${
-         isListening ? "scale-125 opacity-100" : "scale-100 opacity-50"
-       }`}
-       style={{
-         opacity: isRecording ? 0.5 + audioLevel * 0.5 : undefined,
-       }}
-     />
+    {/* Outer glow ring */}
+<div
+  className={`absolute inset-0 w-80 h-80 -translate-x-8 -translate-y-8 rounded-full bg-gradient-to-r from-primary/20 via-primary/15 to-primary/10 blur-3xl transition-all duration-100 ${
+    isListening ? "scale-150 opacity-100" : "scale-100 opacity-30"
+  }`}
+  style={{
+    opacity: isRecording || isAISpeaking ? 0.3 + audioLevel * 0.4 : undefined,
+  }}
+/>
+
+{/* Central glow */}
+<div
+  className={`w-64 h-64 rounded-full bg-primary/25 blur-2xl transition-all duration-100 ${
+    isListening || isAISpeaking ? "scale-150 opacity-100" : "scale-100 opacity-40"
+  }`}
+  style={{
+    opacity: isRecording || isAISpeaking ? 0.4 + audioLevel * 0.5 : undefined,
+  }}
+/>
+
+{/* Inner core */}
+<div
+  className={`absolute inset-0 w-64 h-64 rounded-full bg-primary/15 blur-xl transition-all duration-100 ${
+    isListening || isAISpeaking ? "scale-125 opacity-100" : "scale-100 opacity-50"
+  }`}
+  style={{
+    opacity: isRecording || isAISpeaking ? 0.5 + audioLevel * 0.5 : undefined,
+  }}
+/>
+
    </div>
 
   {/* Instruction text above orb */}

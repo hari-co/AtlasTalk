@@ -30,7 +30,7 @@ _motor_client: Optional[AsyncIOMotorClient] = None
 # ================================
 # 🔊 Text-to-Speech (TTS)
 # ================================
-async def text_to_speech(text: str, voice: str = "pNInz6obpgDQGcFmaJgB") -> str:
+async def text_to_speech(text: str, voice: str = "21m00Tcm4TlvDq8ikWAM") -> str:
     """
     Convert text into speech using ElevenLabs API.
     Returns the path to a temporary .mp3 file.
@@ -48,10 +48,20 @@ async def text_to_speech(text: str, voice: str = "pNInz6obpgDQGcFmaJgB") -> str:
     }
 
     payload = {
-        "text": text,
-        "model_id": "eleven_multilingual_v2",
-        "voice_settings": {"stability": 0.4, "similarity_boost": 0.7},
-    }
+    "text": text,
+    "model_id": "eleven_multilingual_v2",
+    "voice_settings": {
+        # Lower for more emotional and dramatic delivery.
+        "stability": 0.45,
+        # Higher for better clarity and consistency, especially with a high-quality voice.
+        "similarity_boost": 1.0,
+        # Recommended to keep at 0 for most realistic results and lower latency.
+        "style": 0,
+        # Default speed is 1.0. Adjust in small increments (0.9–1.1) for nuance.
+        "speed": 1.0,
+		
+    },
+}
 
     async with aiohttp.ClientSession() as session:
         async with session.post(url, headers=headers, json=payload) as resp:
@@ -64,6 +74,57 @@ async def text_to_speech(text: str, voice: str = "pNInz6obpgDQGcFmaJgB") -> str:
             with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as f:
                 f.write(audio_data)
                 return f.name
+
+# ================================
+# 🔊 Text-to-Speech (TTS)
+# ================================
+# async def text_to_speech(text: str, voice: str = "pNInz6obpgDQGcFmaJgB") -> str:
+#     """
+#     Convert text into natural speech using the ElevenLabs API.
+#     Returns the path to a temporary .mp3 file.
+#     """
+#     import os, aiohttp, tempfile
+
+#     api_key = os.getenv("ELEVENLABS_API_KEY")
+#     if not api_key:
+#         raise RuntimeError("ELEVENLABS_API_KEY not configured in .env")
+
+#     url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice}"
+
+#     headers = {
+#         "Accept": "audio/mpeg",
+#         "Content-Type": "application/json",
+#         "xi-api-key": api_key,
+#     }
+
+#     # 🎧 Tuned voice settings
+#     payload = {
+#         "text": text,
+#         "model_id": "eleven_multilingual_v2",
+#         "voice_settings": {
+#             # lower stability = more expressive / emotional variation
+#             "stability": 0.25,
+#             # higher similarity_boost keeps the core timbre consistent
+#             "similarity_boost": 0.8,
+#             # new parameter that helps keep prosody smooth
+#             "style": 0.5,
+#             # adds subtle pauses and intonation, great for conversation
+#             "use_speaker_boost": True,
+#         },
+#     }
+
+#     async with aiohttp.ClientSession() as session:
+#         async with session.post(url, headers=headers, json=payload) as response:
+#             if response.status != 200:
+#                 text_err = await response.text()
+#                 raise RuntimeError(f"TTS failed: {response.status} - {text_err}")
+
+#             # Save temporary .mp3
+#             temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
+#             temp_file.write(await response.read())
+#             temp_file.close()
+
+#             return temp_file.name
 
 
 # ================================
@@ -121,7 +182,7 @@ async def setupAgent(AGENT: str, country: str, language: str, db=None, scenario_
 
 	# Prepare Gemini config as well
 	gemini_key = os.getenv("GEMINI_API_KEY")
-	gemini_model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+	gemini_model_name = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
 	if not gemini_key:
 		logging.warning("GEMINI_API_KEY not set; Gemini instance will be skipped")
 

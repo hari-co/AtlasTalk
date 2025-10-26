@@ -235,12 +235,12 @@ function CountryPageClient({ slug }: { slug: string }) {
 
       {/* Go Back button top-left */}
       <button
-        onClick={() => router.back()}
-        aria-label="Go back"
+        onClick={() => router.push('/')}
+        aria-label="Back to Map"
         className="fixed left-4 top-4 z-50 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-white backdrop-blur-md transition-colors hover:bg-white/20"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back
+        Back to Map
       </button>
 
       <div className="pointer-events-none fixed inset-0 z-0">
