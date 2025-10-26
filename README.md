@@ -170,15 +170,6 @@ ElevenLabs provides the voice technology that brings conversations to life:
 
 The ElevenLabs integration transforms text-based AI responses into spoken language, enabling learners to practice both listening comprehension and conversational flow in their target language.
 
-## Design Philosophy
-
-AtlasTalk embraces a minimalist, Apple-inspired design aesthetic with:
-- Generous whitespace and breathing room
-- Smooth animations and transitions
-- Dark mode-first color palette
-- Intuitive user interactions
-- Focus on content over chrome
-
 ## Contributing
 
 This project was built for a hackathon. Contributions, issues, and feature requests are welcome.
@@ -186,3 +177,4 @@ This project was built for a hackathon. Contributions, issues, and feature reque
 ## License
 
 See LICENSE file for details.
+
