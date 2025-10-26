@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AtlasTalk - Voice Roleplay Practice</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: white;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 1.1rem;
+        }
+
+        .config-panel {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .config-panel h3 {
+            color: white;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .toggle {
+            position: relative;
+            width: 60px;
+            height: 30px;
+            background: #ccc;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .toggle.active {
+            background: #4CAF50;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 24px;
+            height: 24px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+
+        .toggle.active .toggle-slider {
+            transform: translateX(30px);
+        }
+
+        .toggle-label {
+            color: white;
+            font-weight: 500;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-indicator.enabled {
+            background: #4CAF50;
+        }
+
+        .status-indicator.disabled {
+            background: #f44336;
+        }
+
+        .scenario-section {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .scenario-input {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .scenario-input input {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+        }
+
+        .scenario-input input::placeholder {
+            color: #666;
+        }
+
+        .btn {
+            padding: 15px 25px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(45deg, #74b9ff, #0984e3);
+            color: white;
+            box-shadow: 0 4px 15px rgba(116, 185, 255, 0.3);
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(116, 185, 255, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .scenario-display {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .scenario-title {
+            color: white;
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .scenario-description {
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+
+        .character-info {
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 20px;
+            font-style: italic;
+        }
+
+        .goals-container {
+            margin-bottom: 20px;
+        }
+
+        .goal-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .goal-item.completed {
+            background: rgba(76, 175, 80, 0.3);
+            border: 1px solid rgba(76, 175, 80, 0.5);
+        }
+
+        .goal-checkbox {
+            width: 20px;
+            height: 20px;
+            margin-right: 15px;
+            cursor: pointer;
+        }
+
+        .goal-text {
+            color: white;
+            flex: 1;
+        }
+
+        .opening-line {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            color: white;
+            font-style: italic;
+            margin-bottom: 20px;
+        }
+
+        .interaction-section {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .audio-controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+
+        .text-input-section {
+            display: none;
+            margin-bottom: 20px;
+        }
+
+        .text-input-section.active {
+            display: block;
+        }
+
+        .text-input {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            margin-bottom: 15px;
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .conversation-log {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 10px;
+            max-width: 80%;
+        }
+
+        .message.user {
+            background: rgba(116, 185, 255, 0.3);
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .message.ai {
+            background: rgba(76, 175, 80, 0.3);
+            margin-right: auto;
+        }
+
+        .message-label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .message-content {
+            color: white;
+            line-height: 1.4;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            color: white;
+            font-style: italic;
+        }
+
+        .error {
+            background: rgba(244, 67, 54, 0.3);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(244, 67, 54, 0.5);
+        }
+
+        .success {
+            background: rgba(76, 175, 80, 0.3);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(76, 175, 80, 0.5);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .scenario-input {
+                flex-direction: column;
+            }
+            
+            .audio-controls {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎭 AtlasTalk Voice Roleplay</h1>
+            <p>Practice conversations with AI characters in realistic scenarios</p>
+        </div>
+
+        <!-- Configuration Panel -->
+        <div class="config-panel">
+            <h3>⚙️ Configuration</h3>
+            <div class="toggle-container">
+                <div class="toggle" id="audioToggle">
+                    <div class="toggle-slider"></div>
+                </div>
+                <span class="toggle-label">Audio Mode (STT/TTS)</span>
+            </div>
+            <div id="configStatus">
+                <p><span class="status-indicator disabled" id="audioStatus"></span>Audio: <span id="audioStatusText">Disabled</span></p>
+                <p><span class="status-indicator enabled" id="textStatus"></span>Text Mode: <span id="textStatusText">Enabled</span></p>
+            </div>
+        </div>
+
+        <!-- Scenario Section -->
+        <div class="scenario-section">
+            <h3>🎯 Create Scenario</h3>
+            <div class="scenario-input">
+                <input type="text" id="scenarioInput" placeholder="Enter a scenario (e.g., 'Ordering coffee', 'Job interview', 'Asking for directions')">
+                <button class="btn btn-primary" id="createScenarioBtn">Create Scenario</button>
+            </div>
+            
+            <div class="scenario-display" id="scenarioDisplay">
+                <div class="scenario-title" id="scenarioTitle"></div>
+                <div class="scenario-description" id="scenarioDescription"></div>
+                <div class="character-info" id="characterInfo"></div>
+                
+                <div class="goals-container">
+                    <h4 style="color: white; margin-bottom: 10px;">Goals:</h4>
+                    <div id="goalsList"></div>
+                </div>
+                
+                <div class="opening-line" id="openingLine"></div>
+            </div>
+        </div>
+
+        <!-- Interaction Section -->
+        <div class="interaction-section" id="interactionSection" style="display: none;">
+            <h3>💬 Practice Conversation</h3>
+            
+            <!-- Audio Controls (shown when audio mode is enabled) -->
+            <div class="audio-controls" id="audioControls">
+                <button class="btn btn-secondary" id="playOpeningBtn">🎵 Play Opening</button>
+                <button class="btn btn-primary" id="recordBtn">🎤 Record</button>
+                <button class="btn btn-secondary" id="stopBtn" disabled>⏹️ Stop</button>
+            </div>
+
+            <!-- Text Input (shown when text mode is enabled) -->
+            <div class="text-input-section" id="textInputSection">
+                <textarea class="text-input" id="textInput" placeholder="Type your response here..."></textarea>
+                <button class="btn btn-primary" id="sendTextBtn">Send Response</button>
+            </div>
+
+            <div class="loading" id="loading">Processing...</div>
+            <div id="errorMessage" class="error" style="display: none;"></div>
+            <div id="successMessage" class="success" style="display: none;"></div>
+        </div>
+
+        <!-- Conversation Log -->
+        <div class="conversation-log" id="conversationLog">
+            <div class="message ai">
+                <div class="message-label">AI Assistant</div>
+                <div class="message-content">Welcome! Create a scenario above to start practicing conversations with AI characters.</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class VoiceRoleplayApp {
+            constructor() {
+                this.audioMode = false;
+                this.mediaRecorder = null;
+                this.audioChunks = [];
+                this.currentScenario = null;
+                this.currentGoals = [];
+                this.conversationHistory = [];
+                this.sessionId = null;
+                
+                this.initializeElements();
+                this.bindEvents();
+                this.loadConfig();
+            }
+
+            initializeElements() {
+                this.audioToggle = document.getElementById('audioToggle');
+                this.audioStatus = document.getElementById('audioStatus');
+                this.audioStatusText = document.getElementById('audioStatusText');
+                this.textStatus = document.getElementById('textStatus');
+                this.textStatusText = document.getElementById('textStatusText');
+                
+                this.scenarioInput = document.getElementById('scenarioInput');
+                this.createScenarioBtn = document.getElementById('createScenarioBtn');
+                this.scenarioDisplay = document.getElementById('scenarioDisplay');
+                this.scenarioTitle = document.getElementById('scenarioTitle');
+                this.scenarioDescription = document.getElementById('scenarioDescription');
+                this.characterInfo = document.getElementById('characterInfo');
+                this.goalsList = document.getElementById('goalsList');
+                this.openingLine = document.getElementById('openingLine');
+                
+                this.interactionSection = document.getElementById('interactionSection');
+                this.audioControls = document.getElementById('audioControls');
+                this.textInputSection = document.getElementById('textInputSection');
+                this.playOpeningBtn = document.getElementById('playOpeningBtn');
+                this.recordBtn = document.getElementById('recordBtn');
+                this.stopBtn = document.getElementById('stopBtn');
+                this.textInput = document.getElementById('textInput');
+                this.sendTextBtn = document.getElementById('sendTextBtn');
+                
+                this.loading = document.getElementById('loading');
+                this.errorMessage = document.getElementById('errorMessage');
+                this.successMessage = document.getElementById('successMessage');
+                this.conversationLog = document.getElementById('conversationLog');
+            }
+
+            bindEvents() {
+                this.audioToggle.addEventListener('click', () => this.toggleAudioMode());
+                this.createScenarioBtn.addEventListener('click', () => this.createScenario());
+                this.playOpeningBtn.addEventListener('click', () => this.playOpening());
+                this.recordBtn.addEventListener('click', () => this.startRecording());
+                this.stopBtn.addEventListener('click', () => this.stopRecording());
+                this.sendTextBtn.addEventListener('click', () => this.sendTextResponse());
+                
+                this.scenarioInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.createScenario();
+                });
+                
+                this.textInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        this.sendTextResponse();
+                    }
+                });
+            }
+
+            async loadConfig() {
+                try {
+                    const response = await fetch('http://localhost:8000/voice-roleplay/config');
+                    const config = await response.json();
+                    
+                    this.audioMode = !config.text_only_mode && config.audio_enabled;
+                    this.updateUI();
+                } catch (error) {
+                    console.error('Error loading config:', error);
+                    this.showError('Failed to load configuration');
+                }
+            }
+
+            toggleAudioMode() {
+                this.audioMode = !this.audioMode;
+                this.updateUI();
+            }
+
+            updateUI() {
+                // Update toggle visual state
+                this.audioToggle.classList.toggle('active', this.audioMode);
+                
+                // Update status indicators
+                if (this.audioMode) {
+                    this.audioStatus.className = 'status-indicator enabled';
+                    this.audioStatusText.textContent = 'Enabled';
+                    this.textStatus.className = 'status-indicator disabled';
+                    this.textStatusText.textContent = 'Disabled';
+                } else {
+                    this.audioStatus.className = 'status-indicator disabled';
+                    this.audioStatusText.textContent = 'Disabled';
+                    this.textStatus.className = 'status-indicator enabled';
+                    this.textStatusText.textContent = 'Enabled';
+                }
+                
+                // Show/hide appropriate controls
+                this.audioControls.style.display = this.audioMode ? 'flex' : 'none';
+                this.textInputSection.classList.toggle('active', !this.audioMode);
+            }
+
+            async createScenario() {
+                const scenario = this.scenarioInput.value.trim();
+                if (!scenario) {
+                    this.showError('Please enter a scenario');
+                    return;
+                }
+
+                this.showLoading(true);
+                this.hideMessages();
+
+                try {
+                    const response = await fetch('http://localhost:8000/voice-roleplay/scenario', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ scenario })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    this.currentScenario = data;
+                    this.currentGoals = data.goals || [];
+                    
+                    // Create new session ID for this scenario
+                    this.sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                    
+                    // Reset conversation history for new scenario
+                    this.conversationHistory = [];
+                    
+                    this.displayScenario(data);
+                    this.interactionSection.style.display = 'block';
+                    this.scenarioInput.value = '';
+                    
+                    this.addMessage('ai', 'AI Assistant', `Scenario "${data.scenario_title}" created! You can now start practicing.`);
+                    
+                } catch (error) {
+                    console.error('Error creating scenario:', error);
+                    this.showError('Failed to create scenario: ' + error.message);
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+
+            displayScenario(data) {
+                this.scenarioTitle.textContent = data.scenario_title;
+                this.scenarioDescription.textContent = data.description;
+                this.characterInfo.textContent = `You're talking to: ${data.ai_character} in ${data.environment}`;
+                this.openingLine.textContent = `"${data.opening_line}"`;
+                
+                // Display goals
+                this.goalsList.innerHTML = '';
+                data.goals.forEach((goal, index) => {
+                    const goalElement = document.createElement('div');
+                    goalElement.className = 'goal-item';
+                    goalElement.innerHTML = `
+                        <input type="checkbox" class="goal-checkbox" data-index="${index}" ${goal.completed ? 'checked' : ''}>
+                        <span class="goal-text">${goal.goal}</span>
+                    `;
+                    this.goalsList.appendChild(goalElement);
+                });
+                
+                this.scenarioDisplay.style.display = 'block';
+            }
+
+            async playOpening() {
+                if (!this.currentScenario) return;
+                
+                this.showLoading(true);
+                try {
+                    // For now, just display the opening line
+                    // In audio mode, this would play the TTS audio
+                    this.addMessage('ai', this.currentScenario.ai_character, this.currentScenario.opening_line);
+                    this.showSuccess('Opening line displayed! Now you can respond.');
+                } catch (error) {
+                    console.error('Error playing opening:', error);
+                    this.showError('Failed to play opening line');
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+
+            async startRecording() {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    this.mediaRecorder = new MediaRecorder(stream);
+                    this.audioChunks = [];
+                    
+                    this.mediaRecorder.ondataavailable = (event) => {
+                        this.audioChunks.push(event.data);
+                    };
+                    
+                    this.mediaRecorder.onstop = () => {
+                        this.processAudio();
+                    };
+                    
+                    this.mediaRecorder.start();
+                    this.recordBtn.disabled = true;
+                    this.stopBtn.disabled = false;
+                    
+                } catch (error) {
+                    console.error('Error starting recording:', error);
+                    this.showError('Failed to start recording. Please check microphone permissions.');
+                }
+            }
+
+            stopRecording() {
+                if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
+                    this.mediaRecorder.stop();
+                    this.recordBtn.disabled = false;
+                    this.stopBtn.disabled = true;
+                }
+            }
+
+            async processAudio() {
+                this.showLoading(true);
+                this.hideMessages();
+
+                try {
+                    const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
+                    const formData = new FormData();
+                    formData.append('audio_file', audioBlob, 'recording.webm');
+
+                    const response = await fetch('http://localhost:8000/voice-roleplay/talk', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    
+                    this.addMessage('user', 'You', data.transcription);
+                    this.addMessage('ai', this.currentScenario.ai_character, data.reply);
+                    
+                    // Update goals
+                    await this.updateGoals(data.transcription);
+                    
+                } catch (error) {
+                    console.error('Error processing audio:', error);
+                    this.showError('Failed to process audio: ' + error.message);
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+
+            async sendTextResponse() {
+                const text = this.textInput.value.trim();
+                if (!text) return;
+
+                this.showLoading(true);
+                this.hideMessages();
+
+                try {
+                    // Add user message to conversation history
+                    this.conversationHistory.push({ role: 'user', content: text });
+                    
+                    // Add user message to display
+                    this.addMessage('user', 'You', text);
+                    
+                    // Send to chat endpoint with scenario context and conversation history
+                    const requestBody = {
+                        text: text,
+                        scenario_context: this.currentScenario,
+                        conversation_history: this.conversationHistory
+                    };
+                    
+                    const response = await fetch('http://localhost:8000/voice-roleplay/chat', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(requestBody)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    this.addMessage('ai', this.currentScenario.ai_character, data.ai_reply);
+                    
+                    // Add AI response to conversation history
+                    this.conversationHistory.push({ role: 'assistant', content: data.ai_reply });
+                    
+                    // Update goals from the response if provided
+                    if (data.updated_goals && data.updated_goals.length > 0) {
+                        this.currentGoals = data.updated_goals;
+                        this.updateGoalCheckboxes();
+                    }
+                    
+                    this.textInput.value = '';
+                    
+                } catch (error) {
+                    console.error('Error sending text:', error);
+                    this.showError('Failed to send message: ' + error.message);
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+
+            async updateGoals(userText) {
+                if (!this.currentGoals.length) return;
+
+                try {
+                    const response = await fetch('http://localhost:8000/voice-roleplay/update-goals', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            user_text: userText,
+                            goals: this.currentGoals
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    this.currentGoals = data.updated_goals;
+                    
+                    // Update goal checkboxes
+                    this.updateGoalCheckboxes();
+                    
+                } catch (error) {
+                    console.error('Error updating goals:', error);
+                }
+            }
+
+            updateGoalCheckboxes() {
+                const checkboxes = document.querySelectorAll('.goal-checkbox');
+                checkboxes.forEach((checkbox, index) => {
+                    if (this.currentGoals[index]) {
+                        checkbox.checked = this.currentGoals[index].completed;
+                        const goalItem = checkbox.closest('.goal-item');
+                        goalItem.classList.toggle('completed', this.currentGoals[index].completed);
+                    }
+                });
+            }
+
+            addMessage(sender, label, content) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${sender}`;
+                messageDiv.innerHTML = `
+                    <div class="message-label">${label}</div>
+                    <div class="message-content">${content}</div>
+                `;
+                
+                this.conversationLog.appendChild(messageDiv);
+                this.conversationLog.scrollTop = this.conversationLog.scrollHeight;
+            }
+
+            showLoading(show) {
+                this.loading.style.display = show ? 'block' : 'none';
+            }
+
+            showError(message) {
+                this.errorMessage.textContent = message;
+                this.errorMessage.style.display = 'block';
+                setTimeout(() => this.hideMessages(), 5000);
+            }
+
+            showSuccess(message) {
+                this.successMessage.textContent = message;
+                this.successMessage.style.display = 'block';
+                setTimeout(() => this.hideMessages(), 3000);
+            }
+
+            hideMessages() {
+                this.errorMessage.style.display = 'none';
+                this.successMessage.style.display = 'none';
+            }
+        }
+
+        // Initialize the app when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new VoiceRoleplayApp();
+        });
+    </script>
+</body>
+</html>
