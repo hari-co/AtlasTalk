@@ -18,6 +18,20 @@ load_dotenv()
 # Map agent names to their DigitalOcean Agent base URLs
 endpoints = {
 	"TAXI": "https://t2jd4cy2mk3iestb55rui63l.agents.do-ai.run",
+	"BARISTA" : "https://tteuzngpk2lgt6kwe3dk7t5o.agents.do-ai.run",
+	"COLLEGE" : "https://xgohdlht5wrandiyv34br32g.agents.do-ai.run",
+	"FAMILY" : "https://ua5um6lyt32erqe3dgifxgcq.agents.do-ai.run",
+	"VENDOR" : "https://omiuisweqow65d3lzlpsfmba.agents.do-ai.run",
+	"FIESTA" : "https://kmlrxute55zz2odzhqrkoeey.agents.do-ai.run",
+	"CAFE" : "https://ghki5u64nz4yyiwt4sydrzcb.agents.do-ai.run",
+	"DINNER" : "https://eqqycnzxgun67e3cbvvjx3ve.agents.do-ai.run",
+	"WAITER" : "https://snef3uch436uamykmgemq54z.agents.do-ai.run",
+	"BEER" : "https://sxuzvn27qabb527mnem5ge4i.agents.do-ai.run",
+	"BAKERY" : "https://ffk4fpxvhrfqcrpfwwjxzjnn.agents.do-ai.run",
+	"TEA" : "https://asxrjdg56qys7xaylsd4ihft.agents.do-ai.run",
+	"OFFICE" : "https://nygdebemztf3ozd5mhvsnyfz.agents.do-ai.run",
+	"SAMBA" : "https://ntu656jkrtfl42umuhdd4spi.agents.do-ai.run",
+	"BEACH" : "https://hkwukoh6cmnk64b4ex7v5drp.agents.do-ai.run"
 }
 
 # Mongo configuration
@@ -30,7 +44,7 @@ _motor_client: Optional[AsyncIOMotorClient] = None
 # ================================
 # 🔊 Text-to-Speech (TTS)
 # ================================
-async def text_to_speech(text: str, voice: str = "21m00Tcm4TlvDq8ikWAM") -> str:
+async def text_to_speech(text: str, voice: str = "UgBBYS2sOqTuMpoF3BR0") -> str:
     """
     Convert text into speech using ElevenLabs API.
     Returns the path to a temporary .mp3 file.
@@ -190,25 +204,22 @@ async def setupAgent(AGENT: str, country: str, language: str, db=None, scenario_
 	system_content = f"Your country is set to {country}, and your language is {language}."
 	# Separate system prompt for Gemini-specific behavior
 	gemini_prompt = f"""
-You are a roleplay director for conversation practice.
+You are a goal checker for conversation practice.
 
 User's requested scenario: "{scenario_prompt}"
 
-Facilitate this conversational roleplay scenario. You will recieve alternating input between two parties.
-One of them is the user who is trying to achieve goals in a conversation. The other is an AI Agent playing the role of a foreign local.
-Help keep track of the goals for the user in the conversation. Also provide hints for how the user could respond.
+Facilitate this conversational roleplay scenario. You will recieve input from the user.
+The user is trying to achieve goals in a conversation. The user is talking to an AI Agent playing the role of a foreign local.
+Help keep track of the goals for the user in the conversation. If anything the user says could count towards a goal, mark it as complete.
 
 ALL your responses must be ONLY with valid JSON in this exact format:
 
 {{
-  "description": "Short description of what the user will practice",
-  "environment": "Where the conversation takes place",
   "goals": [
     {{ "goal": "First goal to accomplish", "completed": false }},
     {{ "goal": "Second goal to accomplish", "completed": false }},
     {{ "goal": "Third goal to accomplish", "completed": false }}
   ],
-  "sample_response": "An example hint response that will get get the conversation closer to a goal."
 }}
 
 Make it realistic and interactive. Keep goals simple and achievable through conversation. If a goal ever is completed, NEVER make it false.

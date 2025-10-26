@@ -60,7 +60,7 @@ export const countryDatabase: Record<string, CountryData> = {
       },
       education: {
         title: "College Campus Tour",
-        AGENT: "COLLEGE_ADVISOR",
+        AGENT: "COLLEGE",
         tagline: "Explore the American education system",
         description: "Learn about liberal arts and campus life",
         situation:
@@ -104,7 +104,7 @@ export const countryDatabase: Record<string, CountryData> = {
     scenarios: {
       culture: {
         title: "Chinese New Year Celebration",
-        AGENT: "FAMILY_MEMBER",
+        AGENT: "FAMILY",
         tagline: "Immerse in traditional festivities",
         description: "Join a family celebration",
         situation:
@@ -115,7 +115,7 @@ export const countryDatabase: Record<string, CountryData> = {
       },
       language: {
         title: "Beijing Market Bargaining",
-        AGENT: "MARKET_VENDOR",
+        AGENT: "VENDOR",
         tagline: "Practice Mandarin tones and phrases",
         description: "Navigate a bustling local market",
         situation:
@@ -170,7 +170,7 @@ export const countryDatabase: Record<string, CountryData> = {
     scenarios: {
       culture: {
         title: "Village Fiesta",
-        AGENT: "FIESTA_ORGANIZER",
+        AGENT: "FIESTA",
         tagline: "Dance, dine, and celebrate Spanish style",
         description: "Join a traditional celebration",
         situation:
@@ -181,7 +181,7 @@ export const countryDatabase: Record<string, CountryData> = {
       },
       language: {
         title: "Madrid Café Conversations",
-        AGENT: "CAFÉ_SERVER",
+        AGENT: "CAFE",
         tagline: "Master Castilian Spanish",
         description: "Practice regional variations",
         situation:
@@ -236,7 +236,7 @@ export const countryDatabase: Record<string, CountryData> = {
     scenarios: {
       culture: {
         title: "French Dinner Party",
-        AGENT: "DINNER_HOST",
+        AGENT: "DINNER",
         tagline: "Engage in sophisticated conversation",
         description: "Experience French dining culture",
         situation:
@@ -302,7 +302,7 @@ export const countryDatabase: Record<string, CountryData> = {
     scenarios: {
       culture: {
         title: "Oktoberfest Experience",
-        AGENT: "BEER_GARDEN_SERVER",
+        AGENT: "BEER",
         tagline: "Celebrate German traditions",
         description: "Join the world's largest festival",
         situation:
@@ -313,7 +313,7 @@ export const countryDatabase: Record<string, CountryData> = {
       },
       language: {
         title: "German Language Practice",
-        AGENT: "BAKERY_CLERK",
+        AGENT: "BAKERY",
         tagline: "Master compound words and formality",
         description: "Navigate Sie and du",
         situation:
@@ -368,7 +368,7 @@ export const countryDatabase: Record<string, CountryData> = {
     scenarios: {
       culture: {
         title: "Traditional Tea Ceremony",
-        AGENT: "TEA_MASTER",
+        AGENT: "TEA",
         tagline: "Experience wa and mindfulness",
         description: "Learn Japanese cultural practices",
         situation:
@@ -379,7 +379,7 @@ export const countryDatabase: Record<string, CountryData> = {
       },
       language: {
         title: "Japanese Honorifics",
-        AGENT: "OFFICE_RECEPTIONIST",
+        AGENT: "OFFICE",
         tagline: "Master keigo and politeness levels",
         description: "Navigate formal and casual speech",
         situation:
@@ -500,7 +500,7 @@ export const countryDatabase: Record<string, CountryData> = {
     scenarios: {
       culture: {
         title: "Carnival in Rio",
-        AGENT: "SAMBA_INSTRUCTOR",
+        AGENT: "SAMBA",
         tagline: "Dance to samba and celebrate life",
         description: "Join the world's biggest party",
         situation:
@@ -511,7 +511,7 @@ export const countryDatabase: Record<string, CountryData> = {
       },
       language: {
         title: "Brazilian Portuguese",
-        AGENT: "BEACH_VENDOR",
+        AGENT: "BEACH",
         tagline: "Learn the musical rhythm",
         description: "Practice beach conversations",
         situation:

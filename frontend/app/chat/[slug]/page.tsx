@@ -676,7 +676,7 @@ function ChatPageClient({ slug }: { slug: string }) {
   </div>
 
   {/* Hint card */}
-  {showHints && (
+  {/* {showHints && (
     <div className="absolute bottom-6 left-24 animate-in fade-in slide-in-from-left-8 duration-300">
       <div
         className="bg-card border-2 border-primary/20 rounded-xl px-6 py-4 shadow-2xl cursor-pointer hover:bg-accent hover:border-primary/40 transition-all min-w-[280px]"
@@ -691,7 +691,7 @@ function ChatPageClient({ slug }: { slug: string }) {
         </p>
       </div>
     </div>
-  )}
+  )} */}
 </main>
 
 
