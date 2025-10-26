@@ -2,9 +2,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
-from routes.voice_roleplay import router as voice_roleplay_router
+from backend.routes.voice_roleplay import router as voice_roleplay_router
 from backend.services.db import init_db, close_db
-from backend.services.conversation import router as conv_router
+from backend.routes.conversation_routes import router as conv_router
 from backend.routes.agents import router as agents_router
 
 
@@ -33,7 +33,7 @@ async def shutdown_event():
 
 @app.get("/")
 async def root():
-    from services.voice_roleplay import VoiceRoleplayService
+    from backend.services.voice_roleplay import VoiceRoleplayService
     voice_service = VoiceRoleplayService()
     config = voice_service.get_config()
     
@@ -48,7 +48,7 @@ async def root():
         },
         "endpoints": {
             "voice_roleplay": "/voice-roleplay/",
-            "conversation": "/conversation/",
+            "conversation": "/conversations/",
             "docs": "/docs"
         }
     }

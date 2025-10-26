@@ -3,7 +3,12 @@ from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 import tempfile
 import os
-from services.voice_roleplay import VoiceRoleplayService
+try:
+    # Preferred absolute import within the backend package
+    from backend.services.voice_roleplay import VoiceRoleplayService
+except Exception:
+    # Fallback for environments resolving relative packages differently
+    from ..services.voice_roleplay import VoiceRoleplayService  # type: ignore
 
 router = APIRouter(prefix="/voice-roleplay", tags=["voice-roleplay"])
 
