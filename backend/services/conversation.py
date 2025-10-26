@@ -135,7 +135,8 @@ User's requested scenario: "{scenario_prompt}"
 
 Facilitate this conversational roleplay scenario. You will recieve alternating input between two parties.
 One of them is the user who is trying to achieve goals in a conversation. The other is an AI Agent playing the role of a foreign local.
-Help give general direction to the AI Agent to lead the conversation.
+Help keep track of the goals for the user in the conversation. Also provide hints for how the user could respond.
+
 ALL your responses must be ONLY with valid JSON in this exact format:
 
 {{
@@ -146,10 +147,10 @@ ALL your responses must be ONLY with valid JSON in this exact format:
     {{ "goal": "Second goal to accomplish", "completed": false }},
     {{ "goal": "Third goal to accomplish", "completed": false }}
   ],
-  "opening_line": "What the AI character says to start the conversation"
+  "sample_response": "An example hint response that will get get the conversation closer to a goal."
 }}
 
-Make it realistic and interactive. Keep goals simple and achievable through conversation.
+Make it realistic and interactive. Keep goals simple and achievable through conversation. If a goal ever is completed, NEVER make it false.
 """
 	conversation_doc = {
 		"agent": AGENT,
