@@ -44,10 +44,17 @@ function ChatPageClient({ slug }: { slug: string }) {
   const analyserRef = useRef<AnalyserNode | null>(null)
   const animationFrameRef = useRef<number | null>(null)
 
+  // const [GconversationID, setGConversationID] = useState<string | null>(null)
+  // const [DOconversationID, setDOConversationID] = useState<string | null>(null)
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }
 
+  // useEffect(() => {
+    
+  // }, [])
+  
   useEffect(() => {
     scrollToBottom()
   }, [messages])
@@ -189,6 +196,11 @@ function ChatPageClient({ slug }: { slug: string }) {
               method: 'POST',
               body: formData
             })
+            
+
+
+
+
             
             if (!response.ok) {
               throw new Error(`HTTP error! status: ${response.status}`)
