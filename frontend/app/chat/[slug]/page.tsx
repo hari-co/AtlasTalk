@@ -39,6 +39,10 @@ function ChatPageClient({ slug }: { slug: string }) {
   const [isRecording, setIsRecording] = useState(false)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
+  const [audioLevel, setAudioLevel] = useState(0)
+  const audioContextRef = useRef<AudioContext | null>(null)
+  const analyserRef = useRef<AnalyserNode | null>(null)
+  const animationFrameRef = useRef<number | null>(null)
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -116,12 +120,40 @@ function ChatPageClient({ slug }: { slug: string }) {
     }
   }
 
+  const analyzeAudio = () => {
+    if (!analyserRef.current) return
+
+    const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount)
+    analyserRef.current.getByteFrequencyData(dataArray)
+    
+    // Calculate average volume with moderate boost
+    const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length
+    const boostedLevel = Math.min((average / 128) * 1.5, 1) // Moderate amplification
+    
+    setAudioLevel(boostedLevel)
+    
+    animationFrameRef.current = requestAnimationFrame(analyzeAudio)
+  }
+
   const handleRecordingToggle = async () => {
     if (!isRecording) {
       // Start recording
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
         const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' })
+        
+        // Set up audio analysis
+        const audioContext = new AudioContext()
+        const source = audioContext.createMediaStreamSource(stream)
+        const analyser = audioContext.createAnalyser()
+        analyser.fftSize = 256
+        source.connect(analyser)
+        
+        audioContextRef.current = audioContext
+        analyserRef.current = analyser
+        
+        // Start analyzing audio
+        analyzeAudio()
         
         audioChunksRef.current = []
         
@@ -131,21 +163,81 @@ function ChatPageClient({ slug }: { slug: string }) {
           }
         }
         
-        mediaRecorder.onstop = () => {
+        mediaRecorder.onstop = async () => {
           const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
-          
-          // Create download link
-          const url = URL.createObjectURL(audioBlob)
-          const a = document.createElement('a')
-          a.href = url
-          a.download = `recording-${Date.now()}.webm`
-          document.body.appendChild(a)
-          a.click()
-          document.body.removeChild(a)
-          URL.revokeObjectURL(url)
           
           // Stop all tracks
           stream.getTracks().forEach(track => track.stop())
+          
+          // Clean up audio analysis
+          if (animationFrameRef.current) {
+            cancelAnimationFrame(animationFrameRef.current)
+          }
+          if (audioContextRef.current) {
+            audioContextRef.current.close()
+          }
+          setAudioLevel(0)
+          
+          // Send audio to backend for speech-to-text
+          try {
+            setIsTyping(true)
+            
+            const formData = new FormData()
+            formData.append('audio_file', audioBlob, 'recording.webm')
+            
+            const response = await fetch('http://localhost:8000/audio/stt', {
+              method: 'POST',
+              body: formData
+            })
+            
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`)
+            }
+            
+            const data = await response.json()
+            const transcription = data.transcription
+            
+            // Add user message with transcription
+            const userMessage: Message = {
+              id: Date.now().toString(),
+              role: "user",
+              content: transcription,
+              timestamp: new Date(),
+            }
+            setMessages((prev) => [...prev, userMessage])
+            
+            // Simulate AI response
+            setTimeout(() => {
+              const responses = [
+                `That's a great question! In ${countryData.name}, we have a unique perspective on that. Let me share my experience...`,
+                `I'm glad you asked! Here in ${countryData.name}, things work a bit differently. From my daily life, I can tell you...`,
+                `Interesting! In our culture, we approach this in a special way. Let me explain how we do things here...`,
+              ]
+              
+              const assistantMessage: Message = {
+                id: (Date.now() + 1).toString(),
+                role: "assistant",
+                content: responses[Math.floor(Math.random() * responses.length)],
+                timestamp: new Date(),
+              }
+              
+              setMessages((prev) => [...prev, assistantMessage])
+              setIsTyping(false)
+            }, 1500)
+            
+          } catch (error) {
+            console.error('Error transcribing audio:', error)
+            setIsTyping(false)
+            
+            // Show error message
+            const errorMessage: Message = {
+              id: Date.now().toString(),
+              role: "assistant",
+              content: "Sorry, I couldn't transcribe your audio. Please try again.",
+              timestamp: new Date(),
+            }
+            setMessages((prev) => [...prev, errorMessage])
+          }
         }
         
         mediaRecorder.start()
@@ -192,30 +284,39 @@ function ChatPageClient({ slug }: { slug: string }) {
 
       {/* Siri-style Audio Visualizer */}
  <main className="relative flex-1 flex items-center justify-center bg-gradient-to-br from-background to-muted/20">
-   {/* Centered audio orb - subtle colors */}
+   {/* Centered audio orb - subtle colors with vibration */}
    <div
      className="cursor-pointer relative"
      onClick={handleRecordingToggle}
    >
-     {/* Outer glow ring */}
+     {/* Outer glow ring - subtle vibration with audio */}
      <div
-       className={`absolute inset-0 w-80 h-80 -translate-x-8 -translate-y-8 rounded-full bg-gradient-to-r from-primary/20 via-primary/15 to-primary/10 blur-3xl transition-all duration-500 ${
+       className={`absolute inset-0 w-80 h-80 -translate-x-8 -translate-y-8 rounded-full bg-gradient-to-r from-primary/20 via-primary/15 to-primary/10 blur-3xl transition-all duration-100 ${
          isListening ? "scale-150 opacity-100" : "scale-100 opacity-30"
        }`}
+       style={{
+         opacity: isRecording ? 0.3 + audioLevel * 0.4 : undefined,
+       }}
      />
      
-     {/* Central glow */}
+     {/* Central glow - subtle vibration with audio */}
      <div
-       className={`w-64 h-64 rounded-full bg-primary/25 blur-2xl transition-all duration-500 ${
+       className={`w-64 h-64 rounded-full bg-primary/25 blur-2xl transition-all duration-100 ${
          isListening ? "scale-150 opacity-100" : "scale-100 opacity-40"
        }`}
+       style={{
+         opacity: isRecording ? 0.4 + audioLevel * 0.5 : undefined,
+       }}
      />
      
-     {/* Inner core */}
+     {/* Inner core - subtle vibration with audio */}
      <div
-       className={`absolute inset-0 w-64 h-64 rounded-full bg-primary/15 blur-xl transition-all duration-300 ${
+       className={`absolute inset-0 w-64 h-64 rounded-full bg-primary/15 blur-xl transition-all duration-100 ${
          isListening ? "scale-125 opacity-100" : "scale-100 opacity-50"
        }`}
+       style={{
+         opacity: isRecording ? 0.5 + audioLevel * 0.5 : undefined,
+       }}
      />
    </div>
 
