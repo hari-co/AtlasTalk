@@ -2,11 +2,13 @@ from fastapi import FastAPI
 from dotenv import load_dotenv
 import os
 from backend.services.db import init_db, close_db
-from backend.services.conversation import router as conv_router
+from backend.routes.conversation_routes import router as conv_router
+from backend.routes.agents import router as agents_router
 
 app = FastAPI()
 
 app.include_router(conv_router)
+app.include_router(agents_router)
 
 @app.on_event("startup")
 async def startup_event():
